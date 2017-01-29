@@ -16,5 +16,5 @@ npm install mongodb -g
 
 ## Installation
 
-* Place the "queue_mongodb.ini" file into your Haraka config directory and edit the values accordingly.
-* Place the "queue_mongodb.js" file into your Haraka plugin directory.
+* Place the "mongodb.ini" file into your Haraka config directory and edit the values accordingly.
+* Place the "mongodb.js" file into your Haraka plugin directory.
