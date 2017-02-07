@@ -62,6 +62,8 @@ exports.hook_queue = function(next, connection) {
             'raw': email_object,
             'from': email_object.from,
             'to': email_object.to,
+            'cc': email_object.cc,
+            'bcc': email_object.bcc,
             'subject': email_object.subject,
             'date': email_object.date,
             'received_date': email_object.receivedDate,
