@@ -1,0 +1,15 @@
+{
+  "env": {
+    "mocha": true,
+    "node": true,
+    "es6": true
+  },
+  "globals": {
+    "OK": true,
+    "CONT": true,
+    "DENY": true,
+    "DENYSOFT": true,
+    "DENYDISCONNECT": true,
+    "DENYSOFTDISCONNECT": true
+  }
+}

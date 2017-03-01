@@ -1,0 +1,27 @@
+language: node_js
+node_js:
+    - "4"
+    - "6"
+
+services:
+# https://docs.travis-ci.com/user/database-setup/
+#  - mongodb
+#  - elasticsearch
+#  - redis-server
+
+before_script:
+
+script:
+    - npm run lint
+    - npm test
+
+after_success:
+#
+# enable codecov, which doesn't currently work for plugins because
+# plugins are run in vm.runInNewContext()
+#
+#   - npm install istanbul codecov
+#   - npm run cover
+#   - ./node_modules/.bin/codecov
+
+sudo: false

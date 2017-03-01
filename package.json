@@ -1,0 +1,39 @@
+{
+  "name": "haraka-plugin-mongodb",
+  "version": "1.0.0",
+  "description": "Haraka plugin that stores emails in mongodb. Additionally, stores reports on delivery.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint *.js test/**/*.js",
+    "lintfix": "./node_modules/.bin/eslint --fix *.js test/**/*.js",
+    "test": "./node_modules/.bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Helpmonks/haraka-plugin-mongodb.git"
+  },
+  "keywords": [
+    "haraka",
+    "plugin",
+    "template"
+  ],
+  "author": "Nitai <nitai@helpmonks.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Helpmonks/haraka-plugin-mongodb/issues"
+  },
+  "homepage": "https://github.com/haraka/haraka-plugin-mongodb#readme",
+  "dependencies": {
+    "async": "^1.5.2",
+    "fs-extra": "^2.0.0",
+    "mailparser": "^0.6.2",
+    "mongodb": "^2.2.24",
+    "uuid": "^3.0.1"
+  },
+  "devDependencies": {
+    "eslint": ">=3",
+    "eslint-plugin-haraka": "*",
+    "haraka-test-fixtures": "*",
+    "mocha": "*"
+  }
+}
