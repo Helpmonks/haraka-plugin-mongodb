@@ -36,6 +36,7 @@ exports.register = function () {
 	}
 	// Enable for delivery results
 	if (plugin.cfg.enable.delivery) {
+		plugin.register_hook('queue_outbound', 'queue_outbound_email');
 		plugin.register_hook('send_email', 'sending_email');
 		plugin.register_hook('get_mx', 'getting_mx');
 		plugin.register_hook('deferred', 'deferred_email');
@@ -147,6 +148,15 @@ exports.queue_to_mongodb = function(next, connection) {
 // ------------------
 // RESULTS
 // ------------------
+
+// SEND EMAIL
+exports.queue_ok_email = function(next, connection, params) {
+	var plugin = this;
+	plugin.lognotice('--------------------------------------');
+	plugin.lognotice(' QUEUE_OK !!! ', connection);
+	plugin.lognotice(' PARAMS !!! ', params);
+	next();
+}
 
 // SEND EMAIL
 exports.sending_email = function(next, hmail) {
