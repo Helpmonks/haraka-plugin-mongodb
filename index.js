@@ -29,12 +29,20 @@ exports.register = function () {
 	plugin.register_hook('init_master', 'initialize_mongodb');
 	plugin.register_hook('init_child', 'initialize_mongodb');
 
-	// Depending on what is enabled
+	// Enable for queue
 	if (plugin.cfg.enable.queue) {
 		plugin.register_hook('data', 'enable_transaction_body_parse');
 		plugin.register_hook('queue', 'queue_to_mongodb');
 	}
-	
+	// Enable for delivery results
+	if (plugin.cfg.enable.delivery) {
+		plugin.register_hook('send_email', 'sending_email');
+		plugin.register_hook('get_mx', 'getting_mx');
+		plugin.register_hook('deferred', 'deferred_email');
+		plugin.register_hook('bounce', 'bounced_email');
+		plugin.register_hook('delivered', 'save_results_to_mongodb');
+	}
+
 }
 
 exports.load_mongodb_ini = function () {
@@ -77,6 +85,11 @@ exports.initialize_mongodb = function (next, server) {
 	}
 };
 
+// ------------------
+// QUEUE
+// ------------------
+
+
 // Hook for data
 exports.enable_transaction_body_parse = function(next, connection) {
 	connection.transaction.parse_body = true;
@@ -112,7 +125,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			'references' : email_object.references
 		};
 
-		server.notes.mongodb.collection(plugin.cfg.mongodb.col).insert(_email, function(err) {
+		server.notes.mongodb.collection(plugin.cfg.mongodb.collections.queue).insert(_email, function(err) {
 			if (err) {
 				plugin.logerror('--------------------------------------');
 				plugin.logerror('ERROR ON INSERT : ', err);
@@ -129,6 +142,72 @@ exports.queue_to_mongodb = function(next, connection) {
 	});
 
 };
+
+
+// ------------------
+// RESULTS
+// ------------------
+
+// SEND EMAIL
+exports.sending_email = function(next, hmail) {
+	var plugin = this;
+	plugin.lognotice('--------------------------------------');
+	plugin.lognotice(' SEND_MAIL !!! ', hmail);
+	next();
+}
+
+// GET MX
+exports.getting_mx = function(next, hmail, domain) {
+	var plugin = this;
+	plugin.lognotice('--------------------------------------');
+	plugin.lognotice(' GETTING MX !!! ', hmail);
+	plugin.lognotice(' DOMAIN !!! ', domain);
+	next();
+}
+
+// DEFERRED
+exports.deferred_email = function(next, hmail, deferred_object) {
+	var plugin = this;
+	plugin.lognotice('--------------------------------------');
+	plugin.lognotice(' DEFERRED !!! ', hmail);
+	plugin.lognotice(' DEFERRED_OBJECT DELAY !!! ', deferred_object.delay);
+	plugin.lognotice(' DEFERRED_OBJECT ERROR !!! ', deferred_object.err);
+	next();
+}
+
+// BOUNCE
+exports.bounced_email = function(next, hmail, error) {
+	var plugin = this;
+	plugin.lognotice('--------------------------------------');
+	plugin.lognotice(' BOUNCE !!! ', hmail);
+	plugin.lognotice(' ERROR !!! ', error);
+	next();
+}
+
+
+// DELIVERED
+// params = host, ip, response, delay, port, mode, ok_recips, secured, authenticated
+exports.save_results_to_mongodb = function(next, hmail, params) {
+	var plugin = this;
+	plugin.lognotice('--------------------------------------');
+	plugin.lognotice(' DELIVERED !!! ', hmail);
+	plugin.lognotice(' HOST !!! ', params[0]);
+	plugin.lognotice(' IP !!! ', params[1]);
+	plugin.lognotice(' RESPONSE !!! ', params[2]);
+	plugin.lognotice(' DELAY !!! ', params[3]);
+	plugin.lognotice(' PORT !!! ', params[4]);
+	plugin.lognotice(' MODE !!! ', params[5]);
+	plugin.lognotice(' OK_RECIPS !!! ', params[6]);
+	plugin.lognotice(' SECURED !!! ', params[7]);
+	plugin.lognotice(' AUTH !!! ', params[8]);
+	plugin.lognotice('--------------------------------------');
+	next();
+}
+
+
+
+
+
 
 exports.shutdown = function() {
 	var plugin = this;
