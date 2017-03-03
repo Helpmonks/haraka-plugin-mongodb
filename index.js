@@ -176,7 +176,7 @@ exports.sending_email = function(next, hmail) {
 		'timestamp' : new Date()
 	}
 	// Save
-	_saveDeliveryResults(_data, server);
+	_saveDeliveryResults(_data, server, plugin);
 	next();
 }
 
@@ -243,7 +243,7 @@ exports.shutdown = function() {
 // ------------------
 
 // Add to delivery log
-function _saveDeliveryResults(data_object, server, callback) {
+function _saveDeliveryResults(data_object, server, plugin, callback) {
 	server.notes.mongodb.collection(plugin.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
 		if (err) {
 			plugin.logerror('--------------------------------------');
