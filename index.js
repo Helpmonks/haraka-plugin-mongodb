@@ -289,16 +289,16 @@ exports.shutdown = function() {
 
 // Add to delivery log
 function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
-	conn.collection(plugin.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
+	conn.collection(plugin_object.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
 		if (err) {
-			plugin.logerror('--------------------------------------');
-			plugin.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
-			plugin.logerror('--------------------------------------');
+			plugin_object.logerror('--------------------------------------');
+			plugin_object.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
+			plugin_object.logerror('--------------------------------------');
 			return callback && callback(err);
 		} else {
-			plugin.lognotice('--------------------------------------');
-			plugin.lognotice(' Successfully stored the delivery log !!! ');
-			plugin.lognotice('--------------------------------------');
+			plugin_object.lognotice('--------------------------------------');
+			plugin_object.lognotice(' Successfully stored the delivery log !!! ');
+			plugin_object.lognotice('--------------------------------------');
 			return callback && callback(null);
 		}
 	});
