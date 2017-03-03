@@ -152,8 +152,8 @@ exports.queue_to_mongodb = function(next, connection) {
 // SEND EMAIL
 exports.data_post_email = function(next, connection) {
 	var plugin = this;
-	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' DATA POST EMAIL !!! ');
+	// plugin.lognotice('--------------------------------------');
+	// plugin.lognotice(' DATA POST EMAIL !!! ');
 	// Get Haraka UUID
 	connection.transaction.notes.haraka_uuid = connection.transaction.uuid;
 	// Get messageid
@@ -166,17 +166,18 @@ exports.data_post_email = function(next, connection) {
 // SEND EMAIL
 exports.sending_email = function(next, hmail) {
 	var plugin = this;
-	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' SENDING EMAIL !!! ');
+	// plugin.lognotice('--------------------------------------');
+	// plugin.lognotice(' SENDING EMAIL !!! ');
 	// Object
 	var _data = {
 		'message_id' : hmail.todo.notes.message_id,
 		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
 		'stage' : 'Sending email',
-		'timestamp' : new Date()
+		'timestamp' : new Date(),
+		'hook' : 'send_email'
 	}
 	// Save
-	_saveDeliveryResults(_data, server, plugin);
+	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
 }
 
@@ -186,6 +187,17 @@ exports.getting_mx = function(next, hmail, domain) {
 	plugin.lognotice('--------------------------------------');
 	plugin.lognotice(' GETTING MX !!! ', hmail);
 	plugin.lognotice(' DOMAIN !!! ', domain);
+	// Object
+	var _data = {
+		'message_id' : hmail.todo.notes.message_id,
+		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+		'stage' : 'Get MX',
+		'timestamp' : new Date(),
+		'hook' : 'get_mx',
+		'domain' : domain
+	}
+	// Save
+	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
 }
 
@@ -196,6 +208,17 @@ exports.deferred_email = function(next, hmail, deferred_object) {
 	plugin.lognotice(' DEFERRED !!! ', hmail);
 	plugin.lognotice(' DEFERRED_OBJECT DELAY !!! ', deferred_object.delay);
 	plugin.lognotice(' DEFERRED_OBJECT ERROR !!! ', deferred_object.err);
+	// Object
+	var _data = {
+		'message_id' : hmail.todo.notes.message_id,
+		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+		'stage' : 'Deferred',
+		'timestamp' : new Date(),
+		'hook' : 'deferred',
+		'deferred_object' : deferred_object
+	}
+	// Save
+	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
 }
 
@@ -205,6 +228,17 @@ exports.bounced_email = function(next, hmail, error) {
 	plugin.lognotice('--------------------------------------');
 	plugin.lognotice(' BOUNCE !!! ', hmail);
 	plugin.lognotice(' ERROR !!! ', error);
+	// Object
+	var _data = {
+		'message_id' : hmail.todo.notes.message_id,
+		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+		'stage' : 'Bounced',
+		'timestamp' : new Date(),
+		'hook' : 'bounce',
+		'bounce_error' : error
+	}
+	// Save
+	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
 }
 
@@ -225,6 +259,17 @@ exports.save_results_to_mongodb = function(next, hmail, params) {
 	plugin.lognotice(' SECURED !!! ', params[7]);
 	plugin.lognotice(' AUTH !!! ', params[8]);
 	plugin.lognotice('--------------------------------------');
+	// Object
+	var _data = {
+		'message_id' : hmail.todo.notes.message_id,
+		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+		'stage' : 'Delivered',
+		'timestamp' : new Date(),
+		'hook' : 'delivered',
+		'result' : params
+	}
+	// Save
+	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
 }
 
@@ -243,18 +288,18 @@ exports.shutdown = function() {
 // ------------------
 
 // Add to delivery log
-function _saveDeliveryResults(data_object, server, plugin, callback) {
-	server.notes.mongodb.collection(plugin.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
+function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
+	conn.collection(plugin.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
 		if (err) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
 			plugin.logerror('--------------------------------------');
-			return callback & callback(err);
+			return callback && callback(err);
 		} else {
 			plugin.lognotice('--------------------------------------');
 			plugin.lognotice(' Successfully stored the delivery log !!! ');
 			plugin.lognotice('--------------------------------------');
-			return callback & callback(null);
+			return callback && callback(null);
 		}
 	});
 }
