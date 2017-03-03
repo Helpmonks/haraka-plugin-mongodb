@@ -15,10 +15,13 @@
   "keywords": [
     "haraka",
     "plugin",
-    "template"
+    "mongodb",
+    "smtp",
+    "helpmonks",
+    "delivery"
   ],
   "author": "Nitai <nitai@helpmonks.com>",
-  "license": "MIT",
+  "license": "GPL",
   "bugs": {
     "url": "https://github.com/Helpmonks/haraka-plugin-mongodb/issues"
   },

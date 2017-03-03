@@ -1,4 +1,8 @@
 
+# 1.0.0 - 2017-03-03
+
+- Release to store results for outgoing emails
+
 # 0.5.1 - 2017-03-01
 
 - Storing emails works now again (was broken in previous commit)

@@ -287,10 +287,6 @@ exports.save_results_to_mongodb = function(next, hmail, params) {
 }
 
 
-
-
-
-
 exports.shutdown = function() {
 	var plugin = this;
 	server.notes.mongodb.close();
