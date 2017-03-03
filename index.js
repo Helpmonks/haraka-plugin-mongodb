@@ -23,9 +23,9 @@ exports.register = function () {
 	plugin.load_mongodb_ini();
 
 	// some other plugin doing: inherits('haraka-plugin-mongodb')
-    if (plugin.name !== 'mongodb') return;
+	if (plugin.name !== 'mongodb') return;
 
-    // Load on startup
+	// Load on startup
 	plugin.register_hook('init_master', 'initialize_mongodb');
 	plugin.register_hook('init_child', 'initialize_mongodb');
 
@@ -36,7 +36,7 @@ exports.register = function () {
 	}
 	// Enable for delivery results
 	if (plugin.cfg.enable.delivery) {
-		plugin.register_hook('queue_outbound', 'queue_outbound_email');
+		plugin.register_hook('data_post', 'data_post_email');
 		plugin.register_hook('send_email', 'sending_email');
 		plugin.register_hook('get_mx', 'getting_mx');
 		plugin.register_hook('deferred', 'deferred_email');
@@ -150,11 +150,16 @@ exports.queue_to_mongodb = function(next, connection) {
 // ------------------
 
 // SEND EMAIL
-exports.queue_ok_email = function(next, connection, params) {
+exports.data_post_email = function(next, connection) {
 	var plugin = this;
 	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' QUEUE_OK !!! ', connection);
-	plugin.lognotice(' PARAMS !!! ', params);
+	plugin.lognotice(' DATA POST EMAIL !!! ');
+	// Get Haraka UUID
+	connection.transaction.notes.haraka_uuid = connection.transaction.uuid;
+	// Get messageid
+	var _mid = connection.transaction.header.headers_decoded['message-id'][0];
+	_mid = _mid.replace(/<|>/g, '');
+	connection.transaction.notes.message_id = _mid;
 	next();
 }
 
@@ -162,7 +167,16 @@ exports.queue_ok_email = function(next, connection, params) {
 exports.sending_email = function(next, hmail) {
 	var plugin = this;
 	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' SEND_MAIL !!! ', hmail);
+	plugin.lognotice(' SENDING EMAIL !!! ');
+	// Object
+	var _data = {
+		'message_id' : hmail.todo.notes.message_id,
+		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+		'stage' : 'Sending email',
+		'timestamp' : new Date()
+	}
+	// Save
+	_saveDeliveryResults(_data, server);
 	next();
 }
 
@@ -227,6 +241,23 @@ exports.shutdown = function() {
 // ------------------
 // INTERNAL FUNCTIONS
 // ------------------
+
+// Add to delivery log
+function _saveDeliveryResults(data_object, server, callback) {
+	server.notes.mongodb.collection(plugin.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
+		if (err) {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
+			plugin.logerror('--------------------------------------');
+			return callback & callback(err);
+		} else {
+			plugin.lognotice('--------------------------------------');
+			plugin.lognotice(' Successfully stored the delivery log !!! ');
+			plugin.lognotice('--------------------------------------');
+			return callback & callback(null);
+		}
+	});
+}
 
 function extractChildren(children) {
 	return children.map(function(child) {
