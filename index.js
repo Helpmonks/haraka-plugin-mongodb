@@ -126,7 +126,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			'references' : email_object.references
 		};
 
-		server.notes.mongodb.collection(plugin.cfg.mongodb.collections.queue).insert(_email, function(err) {
+		server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
 			if (err) {
 				plugin.logerror('--------------------------------------');
 				plugin.logerror('ERROR ON INSERT : ', err);
@@ -184,9 +184,9 @@ exports.sending_email = function(next, hmail) {
 // GET MX
 exports.getting_mx = function(next, hmail, domain) {
 	var plugin = this;
-	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' GETTING MX !!! ', hmail);
-	plugin.lognotice(' DOMAIN !!! ', domain);
+	// plugin.lognotice('--------------------------------------');
+	// plugin.lognotice(' GETTING MX !!! ', hmail);
+	// plugin.lognotice(' DOMAIN !!! ', domain);
 	// Object
 	var _data = {
 		'message_id' : hmail.todo.notes.message_id,
@@ -204,10 +204,10 @@ exports.getting_mx = function(next, hmail, domain) {
 // DEFERRED
 exports.deferred_email = function(next, hmail, deferred_object) {
 	var plugin = this;
-	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' DEFERRED !!! ', hmail);
-	plugin.lognotice(' DEFERRED_OBJECT DELAY !!! ', deferred_object.delay);
-	plugin.lognotice(' DEFERRED_OBJECT ERROR !!! ', deferred_object.err);
+	// plugin.lognotice('--------------------------------------');
+	// plugin.lognotice(' DEFERRED !!! ', hmail);
+	// plugin.lognotice(' DEFERRED_OBJECT DELAY !!! ', deferred_object.delay);
+	// plugin.lognotice(' DEFERRED_OBJECT ERROR !!! ', deferred_object.err);
 	// Object
 	var _data = {
 		'message_id' : hmail.todo.notes.message_id,
@@ -215,7 +215,10 @@ exports.deferred_email = function(next, hmail, deferred_object) {
 		'stage' : 'Deferred',
 		'timestamp' : new Date(),
 		'hook' : 'deferred',
-		'deferred_object' : deferred_object
+		'deferred_object' : {
+			'delay' : deferred_object.delay,
+			'error' : deferred_object.err
+		}
 	}
 	// Save
 	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
@@ -225,9 +228,9 @@ exports.deferred_email = function(next, hmail, deferred_object) {
 // BOUNCE
 exports.bounced_email = function(next, hmail, error) {
 	var plugin = this;
-	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' BOUNCE !!! ', hmail);
-	plugin.lognotice(' ERROR !!! ', error);
+	// plugin.lognotice('--------------------------------------');
+	// plugin.lognotice(' BOUNCE !!! ', hmail);
+	// plugin.lognotice(' ERROR !!! ', error);
 	// Object
 	var _data = {
 		'message_id' : hmail.todo.notes.message_id,
@@ -247,18 +250,18 @@ exports.bounced_email = function(next, hmail, error) {
 // params = host, ip, response, delay, port, mode, ok_recips, secured, authenticated
 exports.save_results_to_mongodb = function(next, hmail, params) {
 	var plugin = this;
-	plugin.lognotice('--------------------------------------');
-	plugin.lognotice(' DELIVERED !!! ', hmail);
-	plugin.lognotice(' HOST !!! ', params[0]);
-	plugin.lognotice(' IP !!! ', params[1]);
-	plugin.lognotice(' RESPONSE !!! ', params[2]);
-	plugin.lognotice(' DELAY !!! ', params[3]);
-	plugin.lognotice(' PORT !!! ', params[4]);
-	plugin.lognotice(' MODE !!! ', params[5]);
-	plugin.lognotice(' OK_RECIPS !!! ', params[6]);
-	plugin.lognotice(' SECURED !!! ', params[7]);
-	plugin.lognotice(' AUTH !!! ', params[8]);
-	plugin.lognotice('--------------------------------------');
+	// plugin.lognotice('--------------------------------------');
+	// plugin.lognotice(' DELIVERED !!! ', hmail);
+	// plugin.lognotice(' HOST !!! ', params[0]);
+	// plugin.lognotice(' IP !!! ', params[1]);
+	// plugin.lognotice(' RESPONSE !!! ', params[2]);
+	// plugin.lognotice(' DELAY !!! ', params[3]);
+	// plugin.lognotice(' PORT !!! ', params[4]);
+	// plugin.lognotice(' MODE !!! ', params[5]);
+	// plugin.lognotice(' OK_RECIPS !!! ', params[6]);
+	// plugin.lognotice(' SECURED !!! ', params[7]);
+	// plugin.lognotice(' AUTH !!! ', params[8]);
+	// plugin.lognotice('--------------------------------------');
 	// Object
 	var _data = {
 		'message_id' : hmail.todo.notes.message_id,
@@ -266,7 +269,17 @@ exports.save_results_to_mongodb = function(next, hmail, params) {
 		'stage' : 'Delivered',
 		'timestamp' : new Date(),
 		'hook' : 'delivered',
-		'result' : params
+		'result' : {
+			'host' : params[0],
+			'ip' : params[1],
+			'response' : params[2],
+			'delay' : params[3],
+			'port' : params[4],
+			'mode' : params[5],
+			'ok_recips' : params[6],
+			'secured' : params[7],
+			'authentication' : params[8]
+		}
 	}
 	// Save
 	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
@@ -289,7 +302,7 @@ exports.shutdown = function() {
 
 // Add to delivery log
 function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
-	conn.collection(plugin_object.cfg.mongodb.collections.delivery).insert(data_object, function(err) {
+	conn.collection(plugin_object.cfg.collections.delivery).insert(data_object, function(err) {
 		if (err) {
 			plugin_object.logerror('--------------------------------------');
 			plugin_object.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
