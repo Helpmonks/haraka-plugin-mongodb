@@ -38,3 +38,6 @@ Enable the "queue" to enable this plugin to store incoming emails into the Mongo
 
 If you run into any issue, please report them on the [plugins issue page](https://github.com/Helpmonks/haraka-plugin-mongodb/issues)
 
+# Developers / Pull requests
+
+Pull-requests are welcomed! Development takes place in the "develop" branch. Hence please create any pull-requests against the "develop" branch.
