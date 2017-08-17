@@ -62,10 +62,17 @@ exports.load_mongodb_ini = function () {
 
 exports.initialize_mongodb = function (next, server) {
 	var plugin = this;
+	var connectionString;
 
 	// Only connect if there is no server.notes.mongodb already
 	if ( ! server.notes.mongodb ) {
-		mongoc.connect(`mongodb://${plugin.cfg.mongodb.user}:${plugin.cfg.mongodb.pass}@${plugin.cfg.mongodb.host}:${plugin.cfg.mongodb.port}/${plugin.cfg.mongodb.db}`, function(err, database) {
+		connectionString = 'mongodb://';
+		if (plugin.cfg.mongodb.user && plugin.cfg.mongodb.pass) {
+			connectionString += `${plugin.cfg.mongodb.user}:${plugin.cfg.mongodb.pass}@`;
+		}
+		connectionString += `${plugin.cfg.mongodb.host}:${plugin.cfg.mongodb.port}/${plugin.cfg.mongodb.db}`;
+
+		mongoc.connect(connectionString, function(err, database) {
 			if (err) {
 				plugin.logerror('ERROR connecting to MongoDB !!!');
 				plugin.logerror(err);
