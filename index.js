@@ -106,10 +106,11 @@ exports.enable_transaction_body_parse = function(next, connection) {
 
 // Hook for queue-ing
 exports.queue_to_mongodb = function(next, connection) {
+
 	var plugin = this;
 	var body = connection.transaction.body;
 
-	_mp(connection, function(email_object) {
+	_mp(plugin, connection, function(email_object) {
 
 		var _email = {
 			'raw': email_object,
@@ -130,7 +131,8 @@ exports.queue_to_mongodb = function(next, connection) {
 			'source': 'haraka',
 			'in_reply_to' : email_object.inReplyTo,
 			'reply_to' : email_object.replyTo,
-			'references' : email_object.references
+			'references' : email_object.references,
+			'pickup_date' : new Date()
 		};
 
 		server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
@@ -287,11 +289,11 @@ exports.save_results_to_mongodb = function(next, hmail, params) {
 			'secured' : params[7],
 			'authentication' : params[8]
 		}
-	}
+	};
 	// Save
 	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
-}
+};
 
 
 exports.shutdown = function() {
@@ -343,17 +345,16 @@ function parseSubaddress(user) {
 	return parsed;
 }
 
-function _mp(connection, cb) {
+function _mp(plugin, connection, cb) {
 	var mailparser = new MailParser({
 		'streamAttachments': false
 	});
-
 	mailparser.on("end", function(mail) {
 		// connection.loginfo('MAILPARSER', plugin.cfg);
 		// connection.loginfo('MAILPARSER ATTACHMENTS', mail.attachments);
 		// Check if there are attachments. If so store them to disk
 		if ( mail.attachments ) {
-			_storeAttachments(mail.attachments, mail, function(error, mail_object) {
+			_storeAttachments(connection, plugin, mail.attachments, mail, function(error, mail_object) {
 				return cb(mail_object);
 			});
 		}
@@ -365,7 +366,7 @@ function _mp(connection, cb) {
 }
 
 // Attachment code
-function _storeAttachments(attachments, mail_object, cb) {
+function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 	var _attachments = [];
 
