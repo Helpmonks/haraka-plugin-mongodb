@@ -1,3 +1,7 @@
+# 1.0.4 - 2017-08-18
+
+- Storing size, mail_from and rcpt_to as separate fields in collection now
+
 # 1.0.3 - 2017-08-18
 
 - Using mailparser-mit now
