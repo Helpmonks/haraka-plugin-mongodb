@@ -1,3 +1,7 @@
+# 1.0.3 - 2017-08-18
+
+- Using mailparser-mit now
+- Added node-gyp and iconv as dependencies
 
 # 1.0.2 - 2017-08-17
 

@@ -15,7 +15,7 @@ var async = require('async');
 var uuid = require('uuid');
 var fs = require('fs-extra');
 var path = require('path');
-var MailParser = require("mailparser").MailParser;
+var MailParser = require("mailparser-mit").MailParser;
 
 
 exports.register = function () {
