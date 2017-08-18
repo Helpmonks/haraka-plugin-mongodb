@@ -41,3 +41,4 @@ If you run into any issue, please report them on the [plugins issue page](https:
 # Developers / Pull requests
 
 Pull-requests are welcomed! Development takes place in the "develop" branch. Hence please create any pull-requests against the "develop" branch.
+
