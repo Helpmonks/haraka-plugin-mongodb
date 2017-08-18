@@ -1,4 +1,14 @@
 
+# 1.0.2 - 2017-08-17
+
+- Added field to incoming collection
+- Fixed and issue with attachments and the "plugin" variable
+- Passing the "connection" to mailparser function
+
+# 1.0.1 - 2017-08-17
+
+- Pull-request for mongodb without username and password
+
 # 1.0.0 - 2017-03-03
 
 - Release to store results for outgoing emails
