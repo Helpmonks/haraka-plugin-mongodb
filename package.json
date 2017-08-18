@@ -27,11 +27,11 @@
   },
   "homepage": "https://github.com/haraka/haraka-plugin-mongodb#readme",
   "dependencies": {
-    "async": "^1.5",
-    "fs-extra": "^2.0",
-    "mailparser": "^0.6.2",
-    "mongodb": "^2.2",
-    "uuid": "^3.0"
+    "async": "^2.3",
+    "fs-extra": "^2",
+    "mailparser": "^2",
+    "mongodb": "^2",
+    "uuid": "^3"
   },
   "devDependencies": {
     "eslint": ">=3",
