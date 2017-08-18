@@ -6,17 +6,19 @@ Additionally, you can also store all results for outgoing emails.
 
 # Installation
 
-Easiest is to install this via npm on your Haraka server:
+It is recommended that you create your haraka directory first. Then cd into the haraka directory and do...
 
 ```
 npm install haraka-plugin-mongodb
 ```
 
+This will install everything that is needed for you to store incoming emails to MongoDB and also store results from outgoing emails.
+
 Alternatively you can also do a git clone into the Haraka node_modules directory. The installation directory depends if you installed Haraka globally or not.
 
 # Configuration
 
-Edit the mongodb.ini in the config directory to your requirement:
+Copy the mongodb.ini from the config directory (haraka-plugin-mongodb/config) to your config folder and edit accordingly.
 
 ## Section: MongoDB
 
