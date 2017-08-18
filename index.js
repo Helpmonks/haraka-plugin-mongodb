@@ -132,7 +132,10 @@ exports.queue_to_mongodb = function(next, connection) {
 			'in_reply_to' : email_object.inReplyTo,
 			'reply_to' : email_object.replyTo,
 			'references' : email_object.references,
-			'pickup_date' : new Date()
+			'pickup_date' : new Date(),
+			'mail_from' : connection.transaction.mail_from,
+			'rcpt_to' : connection.transaction.rcpt_to,
+			'size' : connection.transaction.data_bytes
 		};
 
 		server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
