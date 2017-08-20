@@ -1,3 +1,7 @@
+# 1.0.5 - 2017-08-20
+
+- If there are no attachments in the email we just store an empty array in the field
+
 # 1.0.4 - 2017-08-18
 
 - Storing size, mail_from and rcpt_to as separate fields in collection now
