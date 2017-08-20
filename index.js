@@ -122,7 +122,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			'date': email_object.date,
 			'received_date': email_object.receivedDate,
 			'message_id': email_object.messageId,
-			'attachments': email_object.attachments,
+			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
 			'html': email_object.html || email_object.text,
 			'text': email_object.text,
