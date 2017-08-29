@@ -1,3 +1,7 @@
+# 1.0.6 - 2017-08-29
+
+- HTML field will not longer be populated with the text field if not available
+
 # 1.0.5 - 2017-08-20
 
 - If there are no attachments in the email we just store an empty array in the field
