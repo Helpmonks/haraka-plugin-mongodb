@@ -1,3 +1,7 @@
+# 1.0.7 - 2017-08-29
+
+- Some message don't have a message-id, thus creating a random 'objectId@haraka' for message-d header now
+
 # 1.0.6 - 2017-08-29
 
 - HTML field will not longer be populated with the text field if not available
