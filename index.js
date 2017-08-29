@@ -11,6 +11,7 @@
 
 // Require
 var mongoc = require('mongodb').MongoClient;
+var ObjectID = require('mongodb').ObjectID;
 var async = require('async');
 var uuid = require('uuid');
 var fs = require('fs-extra');
@@ -121,7 +122,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			'subject': email_object.subject,
 			'date': email_object.date,
 			'received_date': email_object.receivedDate,
-			'message_id': email_object.messageId,
+			'message_id': email_object.messageId || new ObjectID() + '@haraka',
 			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
 			'html': email_object.html,
