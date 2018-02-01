@@ -6,7 +6,19 @@ Additionally, you can also store all results for outgoing emails.
 
 # Installation
 
-It is recommended that you create your haraka directory first. Then cd into the haraka directory and do...
+Please install node-gyp locally first:
+
+```
+npm install -g node-gyp
+```
+
+Depending on your operating system, you might first have to install python, make, and compiler, e.g.:
+
+```
+apt install python2 make cmake g++
+```
+
+After you have created the Haraka configuration directory you can cd into the haraka directory and do...
 
 ```
 npm install haraka-plugin-mongodb
@@ -18,7 +30,7 @@ Alternatively you can also do a git clone into the Haraka node_modules directory
 
 # Configuration
 
-Copy the mongodb.ini from the config directory (haraka-plugin-mongodb/config) to your config folder and edit accordingly.
+Copy the mongodb.ini from the config directory (haraka-plugin-mongodb/config) to your Haraka config folder and edit accordingly.
 
 ## Section: MongoDB
 
