@@ -18,6 +18,12 @@ Depending on your operating system, you might first have to install python, make
 apt install python2 make cmake g++
 ```
 
+In order to store winmail.dat files (yes some people are still using that) you need to also install tnef with:
+
+```
+apt install tnef
+```
+
 After you have created the Haraka configuration directory you can cd into the haraka directory and do...
 
 ```

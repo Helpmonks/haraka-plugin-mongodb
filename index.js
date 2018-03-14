@@ -17,7 +17,7 @@ var uuid = require('uuid');
 var fs = require('fs-extra');
 var path = require('path');
 var MailParser = require("mailparser-mit").MailParser;
-
+var exec = require('child_process').exec;
 
 exports.register = function () {
 	var plugin = this;
@@ -379,7 +379,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 	async.each(attachments, function (attachment, each_callback) {
 
-		plugin.loginfo('Begin storing attachment : ', attachment);
+		// plugin.loginfo('Begin storing attachment : ', attachment);
 
 		// Path to attachments dir
 		var attachments_folder_path = plugin.cfg.attachments.path;
@@ -470,7 +470,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 										'checksum' : attachment_checksum
 									};
 
-									plugin.lognotice('tnef extracted attachment : ', attachment);
+									// plugin.lognotice('tnef extracted attachment : ', attachment);
 
 									_attachments.push(attachment);
 
