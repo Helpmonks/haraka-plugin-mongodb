@@ -17,7 +17,7 @@ var uuid = require('uuid');
 var fs = require('fs-extra');
 var path = require('path');
 var MailParser = require("mailparser-mit").MailParser;
-
+var exec = require('child_process').exec;
 
 exports.register = function () {
 	var plugin = this;
