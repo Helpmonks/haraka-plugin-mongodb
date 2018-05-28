@@ -1,3 +1,7 @@
+# 1.1.0 - 2018-05-28
+
+- Commented log entries which caused the attachment content to print to log
+
 # 1.0.9 - 2018-03-13
 
 - Bug fix for winmail.dat files
