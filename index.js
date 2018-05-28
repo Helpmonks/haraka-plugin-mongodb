@@ -379,7 +379,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 	async.each(attachments, function (attachment, each_callback) {
 
-		plugin.loginfo('Begin storing attachment : ', attachment);
+		// plugin.loginfo('Begin storing attachment : ', attachment);
 
 		// Path to attachments dir
 		var attachments_folder_path = plugin.cfg.attachments.path;
@@ -470,7 +470,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 										'checksum' : attachment_checksum
 									};
 
-									plugin.lognotice('tnef extracted attachment : ', attachment);
+									// plugin.lognotice('tnef extracted attachment : ', attachment);
 
 									_attachments.push(attachment);
 
