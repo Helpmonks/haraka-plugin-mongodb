@@ -1,3 +1,7 @@
+# 1.1.1 - 2018-07-04
+
+- Will store .ics attachments properly
+
 # 1.1.0 - 2018-05-28
 
 - Commented log entries which caused the attachment content to print to log

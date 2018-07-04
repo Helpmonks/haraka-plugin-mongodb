@@ -388,6 +388,12 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		attachment.checksum = attachment.checksum || uuid.v4();
 		var attachment_checksum = attachment.checksum;
 
+		// For calendar events
+		if ( attachment.contentType === 'text/calendar' ) {
+			attachment.fileName = 'invite.ics';
+			attachment.generatedFileName = 'invite.ics';
+		}
+
 		// if generatedFileName is longer than 200
 		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
 			// Split up filename
@@ -413,7 +419,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 				content : attachment.content || ''
 			};
 			// set to true so later the emails[0].attachments gets updated
-			is_tnef_attachment = true;
+			// is_tnef_attachment = true;
 		}
 
 		var attachment_directory = path.join(attachments_folder_path, attachment_checksum);
