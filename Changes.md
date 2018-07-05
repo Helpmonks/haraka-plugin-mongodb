@@ -1,3 +1,7 @@
+# 1.1.4 - 2018-07-04
+
+- Fixed an issue when there is no attachment.filename defined
+
 # 1.1.3 - 2018-07-04
 
 - Fixed new fileName param
