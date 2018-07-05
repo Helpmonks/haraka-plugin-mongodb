@@ -1,3 +1,9 @@
+# 1.1.5 - 2018-07-05
+
+- This plugin now also takes care of sending a bounce message or not
+- Checking if the last bounce message to user has been over an hour ago. If so, a new bounce will be sent
+- Storing more bounce information in collection
+
 # 1.1.4 - 2018-07-04
 
 - Fixed an issue when there is no attachment.filename defined
