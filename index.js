@@ -390,9 +390,9 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		}
 
 		// if generatedFileName is longer than 200
-		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
+		if (attachment.fileName && attachment.fileName.length > 200) {
 			// Split up filename
-			let _filename_new = attachment.generatedFileName.split('.');
+			let _filename_new = attachment.fileName.split('.');
 			// Get extension
 			let _fileExt = _filename_new.pop();
 			// Get filename
@@ -427,19 +427,19 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			}
 
 			// Complete local path with the filename
-			var attachment_full_path = path.join(attachment_directory, attachment.generatedFileName);
+			var attachment_full_path = path.join(attachment_directory, attachment.fileName);
 			// Log
-			plugin.loginfo(`Storing ${attachment.generatedFileName} locally at ${attachment_full_path}`);
+			plugin.loginfo(`Storing ${attachment.fileName} locally at ${attachment_full_path}`);
 			// Write attachment to disk
 			fs.writeFile(attachment_full_path, attachment.content, function (error) {
 				// Log
 				if (error) plugin.logerror(`Error saving attachment locally to path ${attachment_full_path}, error :`, error);
 
 				// If we can store
-				plugin.lognotice(`Attachment ${attachment.generatedFileName} successfully stored locally (${attachment.length} bytes)`);
+				plugin.lognotice(`Attachment ${attachment.fileName} successfully stored locally (${attachment.length} bytes)`);
 
 				// if we have an attachment in tnef, unzip it and store the results
-				if (attachment.generatedFileName.toLowerCase() === 'winmail.dat') {
+				if (attachment.fileName.toLowerCase() === 'winmail.dat') {
 
 					// set to true so later the emails[0].attachments gets updated
 					is_tnef_attachment = true;

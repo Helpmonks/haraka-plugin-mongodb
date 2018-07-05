@@ -1,3 +1,7 @@
+# 1.1.3 - 2018-07-04
+
+- Fixed new fileName param
+
 # 1.1.2 - 2018-07-04
 
 - Updated to latest mailparser and re-factored parsing
