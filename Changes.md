@@ -1,3 +1,7 @@
+# 1.1.6 - 2018-07-05
+
+- Fixed a small issue when certain header values are not defined
+
 # 1.1.5 - 2018-07-05
 
 - This plugin now also takes care of sending a bounce message or not
