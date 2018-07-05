@@ -383,6 +383,12 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		attachment.checksum = attachment.checksum || uuid.v4();
 		var attachment_checksum = attachment.checksum;
 
+		// Size is in another field in 2.x
+		attachment.length = attachment.size;
+		// No moe generatedFilename in 2.x
+		attachment.fileName = attachment.filename || 'attachment.txt';
+		attachment.generatedFileName = attachment.fileName;
+
 		// For calendar events
 		if ( attachment.contentType === 'text/calendar' ) {
 			attachment.fileName = 'invite.ics';
