@@ -1,3 +1,7 @@
+# 1.1.7 - 2018-07-05
+
+- Fixed a small issue with HTML and references
+
 # 1.1.6 - 2018-07-05
 
 - Fixed a small issue when certain header values are not defined
