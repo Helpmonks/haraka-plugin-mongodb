@@ -14,6 +14,7 @@ var mongoc = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 var async = require('async');
 var uuid = require('uuid');
+var moment = require('moment');
 var fs = require('fs-extra');
 var path = require('path');
 var MailParser = require("mailparser").simpleParser;
@@ -240,22 +241,37 @@ exports.deferred_email = function(next, hmail, deferred_object) {
 
 // BOUNCE
 exports.bounced_email = function(next, hmail, error) {
+	// Make sure we have a message_if. If not do not send anything
+	if ( ! hmail.todo.notes.message_id ) return next(OK);
+	// Vars
 	var plugin = this;
-	// plugin.lognotice('--------------------------------------');
-	// plugin.lognotice(' BOUNCE !!! ', hmail);
-	// plugin.lognotice(' ERROR !!! ', error);
-	// Object
-	var _data = {
-		'message_id' : hmail.todo.notes.message_id,
-		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
-		'stage' : 'Bounced',
-		'timestamp' : new Date(),
-		'hook' : 'bounce',
-		'bounce_error' : error
-	}
-	// Save
-	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
-	next();
+	var _rcpt = hmail.todo.rcpt_to[0];
+	var _rcpt_to = _rcpt.original.slice(1, -1);
+	var _date = moment().subtract(1, 'h').toISOString();
+	var _query = { 'rcpt_to' : _rcpt_to, 'timestamp' : { '$gt' : new Date(_date) } };
+	// Query if there is already a record for this user
+	server.notes.mongodb.collection(plugin.cfg.collections.delivery).find(_query).toArray(function(error, record) {
+		// We store the bounce message in MongoDB no matter what
+		var _data = {
+			'message_id' : hmail.todo.notes.message_id,
+			'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+			'stage' : 'Bounced',
+			'timestamp' : new Date(),
+			'hook' : 'bounce',
+			'bounce_error' : error ? error : null,
+			'rcpt_to' : _rcpt_to,
+			'rcpt_obj' : _rcpt
+		}
+		// Save
+		_saveDeliveryResults(_data, server.notes.mongodb, plugin);
+		// Send bounce message or not
+		if ( record && record.length ) {
+			return next(OK);
+		}
+		else {
+			return next();
+		}
+	})
 }
 
 

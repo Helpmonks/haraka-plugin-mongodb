@@ -1,8 +1,10 @@
 # MongoDB plugin for Haraka
 
-This plugin will store incoming emails in MongoDB and store all attachments on the disk. This plugin has been tested with over 40,000 incoming emails a day.
+This plugin will store incoming emails in MongoDB and store all attachments on the disk. This plugin has been tested with over 100,000 incoming and outgoing emails a day.
 
 Additionally, you can also store all results for outgoing emails.
+
+As of version 1.1.5 this plugin also takes care of bounced messages, i.e., were previously we only stored the bounced results, we no extended on this and store more information, plus only send a bounce message once an hour.
 
 # Installation
 
@@ -18,7 +20,7 @@ Depending on your operating system, you might first have to install python, make
 apt install python2 make cmake g++
 ```
 
-In order to store winmail.dat files (yes some people are still using that) you need to also install tnef with:
+In order to store winmail.dat files (yes some people are still using those) you need to also install tnef with:
 
 ```
 apt install tnef
