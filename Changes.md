@@ -1,3 +1,7 @@
+# 1.1.2 - 2018-07-04
+
+- Updated to latest mailparser and re-factored parsing
+
 # 1.1.1 - 2018-07-04
 
 - Will store .ics attachments properly

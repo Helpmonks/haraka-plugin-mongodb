@@ -16,7 +16,7 @@ var async = require('async');
 var uuid = require('uuid');
 var fs = require('fs-extra');
 var path = require('path');
-var MailParser = require("mailparser-mit").MailParser;
+var MailParser = require("mailparser").simpleParser;
 var exec = require('child_process').exec;
 
 exports.register = function () {
@@ -115,23 +115,23 @@ exports.queue_to_mongodb = function(next, connection) {
 
 		var _email = {
 			'raw': email_object,
-			'from': email_object.from,
-			'to': email_object.to,
-			'cc': email_object.cc,
-			'bcc': email_object.bcc,
+			'from': email_object.headers.get('from').value,
+			'to': email_object.headers.get('to').value,
+			'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
+			'bcc': email_object.headers.get('bcc') ? email_object.headers.get('bcc').value : null,
 			'subject': email_object.subject,
 			'date': email_object.date,
-			'received_date': email_object.receivedDate,
-			'message_id': email_object.messageId || new ObjectID() + '@haraka',
+			'received_date': email_object.headers.get('date'),
+			'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
 			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
-			'html': email_object.html,
-			'text': email_object.text,
+			'html': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitiation. Please see the attached file.' : email_object.html,
+			'text': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitiation. Please see the attached file.' : email_object.text,
 			'timestamp': new Date(),
 			'status': 'unprocessed',
 			'source': 'haraka',
 			'in_reply_to' : email_object.inReplyTo,
-			'reply_to' : email_object.replyTo,
+			'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
 			'references' : email_object.references,
 			'pickup_date' : new Date(),
 			'mail_from' : connection.transaction.mail_from,
@@ -350,13 +350,9 @@ function parseSubaddress(user) {
 }
 
 function _mp(plugin, connection, cb) {
-	var mailparser = new MailParser({
-		'streamAttachments': false
-	});
-	mailparser.on("end", function(mail) {
-		// connection.loginfo('MAILPARSER', plugin.cfg);
-		// connection.loginfo('MAILPARSER ATTACHMENTS', mail.attachments);
-		// Check if there are attachments. If so store them to disk
+	MailParser(connection.transaction.message_stream, (error, mail) => {
+		// console.log("error", error);
+		// console.log("mail", mail);
 		if ( mail.attachments ) {
 			_storeAttachments(connection, plugin, mail.attachments, mail, function(error, mail_object) {
 				return cb(mail_object);
@@ -366,7 +362,6 @@ function _mp(plugin, connection, cb) {
 			return cb(mail);
 		}
 	});
-	connection.transaction.message_stream.pipe(mailparser, {});
 }
 
 // Attachment code
