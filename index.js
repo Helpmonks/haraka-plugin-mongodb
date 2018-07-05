@@ -116,13 +116,13 @@ exports.queue_to_mongodb = function(next, connection) {
 
 		var _email = {
 			'raw': email_object,
-			'from': email_object.headers.get('from').value,
-			'to': email_object.headers.get('to').value,
+			'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
+			'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,
 			'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
 			'bcc': email_object.headers.get('bcc') ? email_object.headers.get('bcc').value : null,
 			'subject': email_object.subject,
 			'date': email_object.date,
-			'received_date': email_object.headers.get('date'),
+			'received_date': email_object.headers.get('date') ? email_object.headers.get('date') : null,
 			'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
 			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
