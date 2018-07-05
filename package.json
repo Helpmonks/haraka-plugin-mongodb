@@ -29,7 +29,7 @@
   "dependencies": {
     "async": "^2.3",
     "fs-extra": "^2",
-    "mailparser-mit": "^0.6",
+    "mailparser": "^2.2.0",
     "mongodb": "^2",
     "uuid": "^3",
     "iconv": "^2.3"
