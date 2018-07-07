@@ -1,3 +1,7 @@
+# 1.1.8 - 2018-07-07
+
+- Fixed an issue with plain-text emails (was not available in the Mailparser object)
+
 # 1.1.7 - 2018-07-05
 
 - Fixed a small issue with HTML and references
