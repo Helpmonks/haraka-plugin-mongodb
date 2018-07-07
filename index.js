@@ -127,7 +127,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
 			'html': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitiation. Please see the attached file.' : email_object.html ? email_object.html : null,
-			'text': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitiation. Please see the attached file.' : email_object.text,
+			'text': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitiation. Please see the attached file.' : body.bodytext ? body.bodytext : null,
 			'timestamp': new Date(),
 			'status': 'unprocessed',
 			'source': 'haraka',
@@ -171,7 +171,7 @@ exports.data_post_email = function(next, connection) {
 	// Get Haraka UUID
 	connection.transaction.notes.haraka_uuid = connection.transaction.uuid;
 	// Get messageid
-	var _mid = connection.transaction.header.headers_decoded['message-id'][0];
+	var _mid = connection.transaction.header.headers_decoded ? connection.transaction.header.headers_decoded['message-id'][0] : new ObjectID() + '@haraka-helpmonks.com';
 	_mid = _mid.replace(/<|>/g, '');
 	connection.transaction.notes.message_id = _mid;
 	next();
