@@ -1,3 +1,7 @@
+# 1.2.0 - 2018-07-10
+
+- Small bugfix for attachment names
+
 # 1.1.9 - 2018-07-10
 
 - We had to revert back to the "old" mailparser, i.e. 0.6.2 version. We are now using the mailparser-mit library. The present mailparser project is a) not maintained anymore and b) showed weird issues with attachments, inline images and just behaved wrong.
