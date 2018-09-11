@@ -199,7 +199,7 @@ exports.data_post_email = function(next, connection) {
 	// Get Haraka UUID
 	connection.transaction.notes.haraka_uuid = connection.transaction.uuid;
 	// Get messageid
-	var _mid = connection.transaction.header.headers_decoded ? connection.transaction.header.headers_decoded['message-id'][0] : new ObjectID() + '@haraka-helpmonks.com';
+	var _mid = connection.transaction.header.headers_decoded && connection.transaction.header.headers_decoded['message-id'] ? connection.transaction.header.headers_decoded['message-id'][0] : new ObjectID() + '@haraka-helpmonks.com';
 	_mid = _mid.replace(/<|>/g, '');
 	connection.transaction.notes.message_id = _mid;
 	next();
@@ -207,6 +207,8 @@ exports.data_post_email = function(next, connection) {
 
 // SEND EMAIL
 exports.sending_email = function(next, hmail) {
+	// Make sure we have a message_id. If not do not send anything
+	if ( ! hmail.todo.notes.message_id ) return next();
 	var plugin = this;
 	// plugin.lognotice('--------------------------------------');
 	// plugin.lognotice(' SENDING EMAIL !!! ');
@@ -225,6 +227,8 @@ exports.sending_email = function(next, hmail) {
 
 // GET MX
 exports.getting_mx = function(next, hmail, domain) {
+	// Make sure we have a message_id. If not do not send anything
+	if ( ! hmail.todo.notes.message_id ) return next();
 	var plugin = this;
 	// plugin.lognotice('--------------------------------------');
 	// plugin.lognotice(' GETTING MX !!! ', hmail);
@@ -245,6 +249,8 @@ exports.getting_mx = function(next, hmail, domain) {
 
 // DEFERRED
 exports.deferred_email = function(next, hmail, deferred_object) {
+	// Make sure we have a message_id. If not do not send anything
+	if ( ! hmail.todo.notes.message_id ) return next();
 	var plugin = this;
 	// plugin.lognotice('--------------------------------------');
 	// plugin.lognotice(' DEFERRED !!! ', hmail);
@@ -269,8 +275,8 @@ exports.deferred_email = function(next, hmail, deferred_object) {
 
 // BOUNCE
 exports.bounced_email = function(next, hmail, error) {
-	// Make sure we have a message_if. If not do not send anything
-	if ( ! hmail.todo.notes.message_id ) return next(OK);
+	// Make sure we have a message_id. If not do not send anything
+	if ( ! hmail.todo.notes.message_id ) return next();
 	// Vars
 	var plugin = this;
 	var _rcpt = hmail.todo.rcpt_to[0];
@@ -306,6 +312,8 @@ exports.bounced_email = function(next, hmail, error) {
 // DELIVERED
 // params = host, ip, response, delay, port, mode, ok_recips, secured, authenticated
 exports.save_results_to_mongodb = function(next, hmail, params) {
+	// Make sure we have a message_id. If not do not send anything
+	if ( ! hmail.todo.notes.message_id ) return next();
 	var plugin = this;
 	// plugin.lognotice('--------------------------------------');
 	// plugin.lognotice(' DELIVERED !!! ', hmail);
@@ -355,6 +363,10 @@ exports.shutdown = function() {
 
 // Add to delivery log
 function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
+	// Catch if something is not defined
+	if (!plugin_object || !plugin_object.cfc || plugin_object.cfg.collections) return callback && callback(null);
+	if (!conn || !conn.collection) return callback && callback(null);
+	// Save
 	conn.collection(plugin_object.cfg.collections.delivery).insert(data_object, function(err) {
 		if (err) {
 			plugin_object.logerror('--------------------------------------');
