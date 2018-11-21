@@ -364,8 +364,8 @@ exports.shutdown = function() {
 // Add to delivery log
 function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
 	// Catch if something is not defined
-	if (!plugin_object || !plugin_object.cfc || plugin_object.cfg.collections) return callback && callback(null);
-	if (!conn || !conn.collection) return callback && callback(null);
+	// if (!plugin_object || !plugin_object.cfc || plugin_object.cfg.collections) return callback && callback(null);
+	// if (!conn || !conn.collection) return callback && callback(null);
 	// Save
 	conn.collection(plugin_object.cfg.collections.delivery).insert(data_object, function(err) {
 		if (err) {
