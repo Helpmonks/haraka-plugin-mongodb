@@ -137,7 +137,8 @@ exports.queue_to_mongodb = function(next, connection) {
 			'pickup_date' : new Date(),
 			'mail_from' : connection.transaction.mail_from,
 			'rcpt_to' : connection.transaction.rcpt_to,
-			'size' : connection.transaction.data_bytes
+			'size' : connection.transaction.data_bytes,
+			'transferred' : false
 		};
 
 

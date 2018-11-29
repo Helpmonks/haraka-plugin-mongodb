@@ -1,3 +1,7 @@
+# 1.2.2 - 2018-11-29
+
+- Added new "transferred" column
+
 # 1.2.1 - 2018-09-11
 
 - Catching now when collection is not defined, todo items are not defined, and some headers are not defined
