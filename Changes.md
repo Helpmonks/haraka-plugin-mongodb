@@ -3,7 +3,7 @@
 - Changed to mailparser
 - Updated to MongoDB v3
 - Updated all dependent libraries, too
-- Inline images are no longer stored as attachments as they are replaces in the HTML as Base64 now
+- Inline images are no longer stored as attachments as they are replaced in the HTML as Base64 now
 - The updated libraries also solve an issue where the HTML body under rare circumstances could not be read
 - Tested and working with Node v10.15.x
 
