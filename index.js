@@ -164,6 +164,14 @@ exports.queue_to_mongodb = function(next, connection) {
 			// 	'transferred' : false
 			// };
 
+			// References
+			// var _references = [];
+			// if (email_object.references) {
+			// 	if ( Array.isArray(email_object.references) ) {
+			// 		_references = email_object.references.map(r => r.replace(/<|>/gm, ''));
+			// 	}
+			// 	_references = email_object.references.replace(/<|>/gm, '').split('');
+			// }
 
 			// MP 2.2 code
 			var _email = {
@@ -185,7 +193,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				'source': 'haraka',
 				'in_reply_to' : email_object.inReplyTo,
 				'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
-				'references' : email_object.references ? email_object.references : [],
+				'references' : email_object.references,
 				'pickup_date' : new Date(),
 				'mail_from' : connection.transaction.mail_from,
 				'rcpt_to' : connection.transaction.rcpt_to,
