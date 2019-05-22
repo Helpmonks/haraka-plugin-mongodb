@@ -1,0 +1,649 @@
+{
+  "_events": {
+    
+  },
+  "_eventsCount": 1,
+  "_maxListeners": null,
+  "header": {
+    "headers": {
+      "received": [
+        "from cross.birch.relay.mailchannels.net (cross.birch.relay.mailchannels.net [23.83.209.46])\n\tby smtp1.sendmonks.net (Haraka/2.8.24) with ESMTPS id 7860D0F5-361F-40D8-97CD-955777CB3EE7.1\n\tenvelope-from <nyonyobac@gmail.com>\n\t(version=TLSv1/SSLv3 cipher=ECDHE-RSA-AES128-GCM-SHA256 verify=FAIL);\n\tWed, 22 May 2019 12:57:00 -0400\n",
+        "from relay.mailchannels.net (localhost [127.0.0.1])\n\tby relay.mailchannels.net (Postfix) with ESMTP id 838C08C1B23\n\tfor <58b5c1b6a29f941299cd961a@helpmonks.net>; Wed, 22 May 2019 16:56:57 +0000 (UTC)\n",
+        "from srv05.hostserv.co.za (100-96-85-27.trex.outbound.svc.cluster.local [100.96.85.27])\n\t(Authenticated sender: webafrica)\n\tby relay.mailchannels.net (Postfix) with ESMTPA id C7F548C31CA\n\tfor <58b5c1b6a29f941299cd961a@helpmonks.net>; Wed, 22 May 2019 16:56:51 +0000 (UTC)\n",
+        "from srv05.hostserv.co.za ([TEMPUNAVAIL]. [41.185.8.105])\n\t(using TLSv1.2 with cipher DHE-RSA-AES256-GCM-SHA384)\n\tby 0.0.0.0:2500 (trex/5.17.2);\n\tWed, 22 May 2019 16:56:56 +0000\n",
+        "from [41.185.250.90] (port=62548 helo=spamtitan-filter09.hostserv.co.za)\n\tby srv05.hostserv.co.za with esmtp (Exim 4.91)\n\t(envelope-from <nyonyobac@gmail.com>)\n\tid 1hTUXb-004qWs-H3\n\tfor sales@togsa.co.za; Wed, 22 May 2019 18:56:39 +0200\n",
+        "from localhost (localhost [127.0.0.1])\n\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id CDF976ED42A3\n\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:36 +0200 (SAST)\n",
+        "from spamtitan-filter09.hostserv.co.za (localhost [127.0.0.1])\n\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id 7F52A6ED435E\n\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:30 +0200 (SAST)\n",
+        "from mail-qk1-f174.google.com (mail-qk1-f174.google.com [209.85.222.174])\n\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id E4C526ED4356\n\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:16 +0200 (SAST)\n",
+        "by mail-qk1-f174.google.com with SMTP id m18so1917937qki.8\n        for <sales@togsa.co.za>; Wed, 22 May 2019 09:56:15 -0700 (PDT)\n"
+      ],
+      "x-sender-id": [
+        "_forwarded-from|209.85.222.174\n",
+        "_forwarded-from|209.85.222.174\n"
+      ],
+      "x-mc-relay": [
+        "Forwarding\n"
+      ],
+      "x-mailchannels-senderid": [
+        "_forwarded-from|209.85.222.174\n"
+      ],
+      "x-mailchannels-auth-id": [
+        "webafrica\n"
+      ],
+      "x-turn-fumbling": [
+        "3ab6ef5b53d510f6_1558544216138_2661952157\n"
+      ],
+      "x-mc-loop-signature": [
+        "1558544216138:2187758273\n"
+      ],
+      "x-mc-ingress-time": [
+        "1558544216138\n"
+      ],
+      "x-quarantine-id": [
+        "<C3_X7C82fv3n>\n"
+      ],
+      "x-virus-scanned": [
+        "by SpamTitan at hostserv.co.za\n"
+      ],
+      "x-spam-level": [
+        ""
+      ],
+      "authentication-results": [
+        "spamtitan-filter09.hostserv.co.za;\n        dkim=pass (2048-bit rsa key sha256) header.d=gmail.com\n          header.i=@gmail.com header.b=aReHCP5/ header.a=rsa-sha256\n          header.s=20161025 x-bits=2048;\n        x-google-dkim=pass (2048-bit rsa key) header.d=1e100.net\n          header.i=@1e100.net header.b=dKMEe9Sm\n"
+      ],
+      "dkim-signature": [
+        "v=1; a=rsa-sha256; c=relaxed/relaxed;\n        d=gmail.com; s=20161025;\n        h=mime-version:references:in-reply-to:from:date:message-id:subject:to;\n        bh=ewodTwBXTztjsBzUKGr7ooAgbNGDVxrtJ+oHboyQW54=;\n        b=aReHCP5/eIm1eW8nHxXj2QOlHPr8hmsV3n9y2XygFQBYrT9id+0S7oaiwRYavW5pCk\n         fu5NsUSXWfOlcbj90FoatyNcbUS+wiMC6RP4tG5dY++74572gkeoZZduforLN6xYGfwH\n         1Sw71uPcmNcPau4H5k2/OonmjdcI5gB/ucP7S9ehUMd8t8binl0MprKC8NUJs7ucHm/0\n         nfti+j9qDEVzTBdIMWUs09tXtDtfO6WthVt4ekRTTWdfTo+luEbZpjyx/5hMF7mp5R0M\n         hTavKf/2x7NLOlLgfJh6R7Pjpkh4md9kUzBHDTUUlQxAV/l75HBMq3mecBYJcjkr4huy\n         RvSA==\n"
+      ],
+      "x-google-dkim-signature": [
+        "v=1; a=rsa-sha256; c=relaxed/relaxed;\n        d=1e100.net; s=20161025;\n        h=x-gm-message-state:mime-version:references:in-reply-to:from:date\n         :message-id:subject:to;\n        bh=ewodTwBXTztjsBzUKGr7ooAgbNGDVxrtJ+oHboyQW54=;\n        b=dKMEe9SmQ3CdJ+uF2SWo1clBF3DYPCnMEeSrzab2qhwuCWJNBiXHvpBSIOHiVrZdiT\n         PNnQi8oHYZ0Ajvp1kzAwvti4I8JgUgj4S6aQoUx1tEpqzqPM729nDH6YA5kIqvrAvVbQ\n         jFgkTFHaDcQV/HeGzkGj8DsdRDSgOALa6boJYnIAsbX9UXlcLyDWkXgDE1eETRjiWlaG\n         6eO+FlVqhgRaFXwkmm+KyFDUEs+LKptLP7FicVu+TQIOxFTvE4DsiexLOaCNB6ChaUIc\n         Ieero5AHEwppYotIBCI7vG67qTXEowWqFJBvHc22K74w3u9gQRxQ6FjsAwfLcOX1Rj00\n         TfZg==\n"
+      ],
+      "x-gm-message-state": [
+        "APjAAAV43fASsTaTxZmLQnptS63GWIKBZmqLu5m7/5huobAFKuLQybSW\n\to41UN92qdpGPh6SolfntyNil3v3D1y1SvrLPIMVHNg==\n"
+      ],
+      "x-google-smtp-source": [
+        "APXvYqxdGLrHsFislrLuOAdSRVG9qfQsdRufQPeHYbBLMFowIMrkU6+gp5sGuG5VJTpGHMYEmfAVnlElHc4QuKnOM6Q=\n"
+      ],
+      "x-received": [
+        "by 2002:a37:351:: with SMTP id 78mr69802151qkd.147.1558544173191;\n Wed, 22 May 2019 09:56:13 -0700 (PDT)\n"
+      ],
+      "mime-version": [
+        "1.0\n"
+      ],
+      "references": [
+        "<CADXPB9UJO54hJ3fLjNkT_gKYugMypg0vr1wjqGonyJvRn8QHxA@mail.gmail.com>\n <5ce4e9a65f983337b2e0279d_58b5c1b6a29f941299cd961a_1558505894@helpmonks.com> <CADXPB9WYAYFpCzjiq1bEye0rgfvNDomBJLvObh3PuMcwE4WDDg@mail.gmail.com>\n"
+      ],
+      "in-reply-to": [
+        "<CADXPB9WYAYFpCzjiq1bEye0rgfvNDomBJLvObh3PuMcwE4WDDg@mail.gmail.com>\n"
+      ],
+      "from": [
+        "Nyonyoba Communications <nyonyobac@gmail.com>\n"
+      ],
+      "date": [
+        "Wed, 22 May 2019 18:56:02 +0200\n"
+      ],
+      "message-id": [
+        "<CADXPB9WEMw44XP-b0BWXv5cxaGXwNjwAPojmrW0rUpYXpU6nUw@mail.gmail.com>\n"
+      ],
+      "subject": [
+        "Re: Order\n"
+      ],
+      "to": [
+        "Trade Only Gifts Sales <sales@togsa.co.za>\n"
+      ],
+      "content-type": [
+        "multipart/mixed; boundary=\"000000000000d1033205897cd70c\"\n"
+      ],
+      "x-authuser": [
+        ""
+      ],
+      "original-authentication-results": [
+        "spamtitan-filter09.hostserv.co.za;\n        dkim=pass (2048-bit rsa key sha256) header.d=gmail.com\n          header.i=@gmail.com header.b=aReHCP5/ header.a=rsa-sha256\n          header.s=20161025 x-bits=2048;\n        x-google-dkim=pass (2048-bit rsa key) header.d=1e100.net\n          header.i=@1e100.net header.b=dKMEe9Sm"
+      ]
+    },
+    "headers_decoded": {
+      "received": [
+        "from cross.birch.relay.mailchannels.net (cross.birch.relay.mailchannels.net [23.83.209.46])\tby smtp1.sendmonks.net (Haraka/2.8.24) with ESMTPS id 7860D0F5-361F-40D8-97CD-955777CB3EE7.1\tenvelope-from <nyonyobac@gmail.com>\t(version=TLSv1/SSLv3 cipher=ECDHE-RSA-AES128-GCM-SHA256 verify=FAIL);\tWed, 22 May 2019 12:57:00 -0400",
+        "from relay.mailchannels.net (localhost [127.0.0.1])\tby relay.mailchannels.net (Postfix) with ESMTP id 838C08C1B23\tfor <58b5c1b6a29f941299cd961a@helpmonks.net>; Wed, 22 May 2019 16:56:57 +0000 (UTC)",
+        "from srv05.hostserv.co.za (100-96-85-27.trex.outbound.svc.cluster.local [100.96.85.27])\t(Authenticated sender: webafrica)\tby relay.mailchannels.net (Postfix) with ESMTPA id C7F548C31CA\tfor <58b5c1b6a29f941299cd961a@helpmonks.net>; Wed, 22 May 2019 16:56:51 +0000 (UTC)",
+        "from srv05.hostserv.co.za ([TEMPUNAVAIL]. [41.185.8.105])\t(using TLSv1.2 with cipher DHE-RSA-AES256-GCM-SHA384)\tby 0.0.0.0:2500 (trex/5.17.2);\tWed, 22 May 2019 16:56:56 +0000",
+        "from [41.185.250.90] (port=62548 helo=spamtitan-filter09.hostserv.co.za)\tby srv05.hostserv.co.za with esmtp (Exim 4.91)\t(envelope-from <nyonyobac@gmail.com>)\tid 1hTUXb-004qWs-H3\tfor sales@togsa.co.za; Wed, 22 May 2019 18:56:39 +0200",
+        "from localhost (localhost [127.0.0.1])\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id CDF976ED42A3\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:36 +0200 (SAST)",
+        "from spamtitan-filter09.hostserv.co.za (localhost [127.0.0.1])\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id 7F52A6ED435E\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:30 +0200 (SAST)",
+        "from mail-qk1-f174.google.com (mail-qk1-f174.google.com [209.85.222.174])\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id E4C526ED4356\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:16 +0200 (SAST)",
+        "by mail-qk1-f174.google.com with SMTP id m18so1917937qki.8        for <sales@togsa.co.za>; Wed, 22 May 2019 09:56:15 -0700 (PDT)"
+      ],
+      "x-sender-id": [
+        "_forwarded-from|209.85.222.174",
+        "_forwarded-from|209.85.222.174"
+      ],
+      "x-mc-relay": [
+        "Forwarding"
+      ],
+      "x-mailchannels-senderid": [
+        "_forwarded-from|209.85.222.174"
+      ],
+      "x-mailchannels-auth-id": [
+        "webafrica"
+      ],
+      "x-turn-fumbling": [
+        "3ab6ef5b53d510f6_1558544216138_2661952157"
+      ],
+      "x-mc-loop-signature": [
+        "1558544216138:2187758273"
+      ],
+      "x-mc-ingress-time": [
+        "1558544216138"
+      ],
+      "x-quarantine-id": [
+        "<C3_X7C82fv3n>"
+      ],
+      "x-virus-scanned": [
+        "by SpamTitan at hostserv.co.za"
+      ],
+      "x-spam-level": [
+        ""
+      ],
+      "authentication-results": [
+        "spamtitan-filter09.hostserv.co.za;        dkim=pass (2048-bit rsa key sha256) header.d=gmail.com          header.i=@gmail.com header.b=aReHCP5/ header.a=rsa-sha256          header.s=20161025 x-bits=2048;        x-google-dkim=pass (2048-bit rsa key) header.d=1e100.net          header.i=@1e100.net header.b=dKMEe9Sm"
+      ],
+      "dkim-signature": [
+        "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=gmail.com; s=20161025;        h=mime-version:references:in-reply-to:from:date:message-id:subject:to;        bh=ewodTwBXTztjsBzUKGr7ooAgbNGDVxrtJ+oHboyQW54=;        b=aReHCP5/eIm1eW8nHxXj2QOlHPr8hmsV3n9y2XygFQBYrT9id+0S7oaiwRYavW5pCk         fu5NsUSXWfOlcbj90FoatyNcbUS+wiMC6RP4tG5dY++74572gkeoZZduforLN6xYGfwH         1Sw71uPcmNcPau4H5k2/OonmjdcI5gB/ucP7S9ehUMd8t8binl0MprKC8NUJs7ucHm/0         nfti+j9qDEVzTBdIMWUs09tXtDtfO6WthVt4ekRTTWdfTo+luEbZpjyx/5hMF7mp5R0M         hTavKf/2x7NLOlLgfJh6R7Pjpkh4md9kUzBHDTUUlQxAV/l75HBMq3mecBYJcjkr4huy         RvSA=="
+      ],
+      "x-google-dkim-signature": [
+        "v=1; a=rsa-sha256; c=relaxed/relaxed;        d=1e100.net; s=20161025;        h=x-gm-message-state:mime-version:references:in-reply-to:from:date         :message-id:subject:to;        bh=ewodTwBXTztjsBzUKGr7ooAgbNGDVxrtJ+oHboyQW54=;        b=dKMEe9SmQ3CdJ+uF2SWo1clBF3DYPCnMEeSrzab2qhwuCWJNBiXHvpBSIOHiVrZdiT         PNnQi8oHYZ0Ajvp1kzAwvti4I8JgUgj4S6aQoUx1tEpqzqPM729nDH6YA5kIqvrAvVbQ         jFgkTFHaDcQV/HeGzkGj8DsdRDSgOALa6boJYnIAsbX9UXlcLyDWkXgDE1eETRjiWlaG         6eO+FlVqhgRaFXwkmm+KyFDUEs+LKptLP7FicVu+TQIOxFTvE4DsiexLOaCNB6ChaUIc         Ieero5AHEwppYotIBCI7vG67qTXEowWqFJBvHc22K74w3u9gQRxQ6FjsAwfLcOX1Rj00         TfZg=="
+      ],
+      "x-gm-message-state": [
+        "APjAAAV43fASsTaTxZmLQnptS63GWIKBZmqLu5m7/5huobAFKuLQybSW\to41UN92qdpGPh6SolfntyNil3v3D1y1SvrLPIMVHNg=="
+      ],
+      "x-google-smtp-source": [
+        "APXvYqxdGLrHsFislrLuOAdSRVG9qfQsdRufQPeHYbBLMFowIMrkU6+gp5sGuG5VJTpGHMYEmfAVnlElHc4QuKnOM6Q="
+      ],
+      "x-received": [
+        "by 2002:a37:351:: with SMTP id 78mr69802151qkd.147.1558544173191; Wed, 22 May 2019 09:56:13 -0700 (PDT)"
+      ],
+      "mime-version": [
+        "1.0"
+      ],
+      "references": [
+        "<CADXPB9UJO54hJ3fLjNkT_gKYugMypg0vr1wjqGonyJvRn8QHxA@mail.gmail.com> <5ce4e9a65f983337b2e0279d_58b5c1b6a29f941299cd961a_1558505894@helpmonks.com> <CADXPB9WYAYFpCzjiq1bEye0rgfvNDomBJLvObh3PuMcwE4WDDg@mail.gmail.com>"
+      ],
+      "in-reply-to": [
+        "<CADXPB9WYAYFpCzjiq1bEye0rgfvNDomBJLvObh3PuMcwE4WDDg@mail.gmail.com>"
+      ],
+      "from": [
+        "Nyonyoba Communications <nyonyobac@gmail.com>"
+      ],
+      "date": [
+        "Wed, 22 May 2019 18:56:02 +0200"
+      ],
+      "message-id": [
+        "<CADXPB9WEMw44XP-b0BWXv5cxaGXwNjwAPojmrW0rUpYXpU6nUw@mail.gmail.com>"
+      ],
+      "subject": [
+        "Re: Order"
+      ],
+      "to": [
+        "Trade Only Gifts Sales <sales@togsa.co.za>"
+      ],
+      "content-type": [
+        "multipart/mixed; boundary=\"000000000000d1033205897cd70c\""
+      ],
+      "x-authuser": [
+        ""
+      ],
+      "original-authentication-results": [
+        "spamtitan-filter09.hostserv.co.za;        dkim=pass (2048-bit rsa key sha256) header.d=gmail.com          header.i=@gmail.com header.b=aReHCP5/ header.a=rsa-sha256          header.s=20161025 x-bits=2048;        x-google-dkim=pass (2048-bit rsa key) header.d=1e100.net          header.i=@1e100.net header.b=dKMEe9Sm"
+      ]
+    },
+    "header_list": [
+      "Received: from cross.birch.relay.mailchannels.net (cross.birch.relay.mailchannels.net [23.83.209.46])\n\tby smtp1.sendmonks.net (Haraka/2.8.24) with ESMTPS id 7860D0F5-361F-40D8-97CD-955777CB3EE7.1\n\tenvelope-from <nyonyobac@gmail.com>\n\t(version=TLSv1/SSLv3 cipher=ECDHE-RSA-AES128-GCM-SHA256 verify=FAIL);\n\tWed, 22 May 2019 12:57:00 -0400\n",
+      "X-Sender-Id: _forwarded-from|209.85.222.174\n",
+      "Received: from relay.mailchannels.net (localhost [127.0.0.1])\n\tby relay.mailchannels.net (Postfix) with ESMTP id 838C08C1B23\n\tfor <58b5c1b6a29f941299cd961a@helpmonks.net>; Wed, 22 May 2019 16:56:57 +0000 (UTC)\n",
+      "Received: from srv05.hostserv.co.za (100-96-85-27.trex.outbound.svc.cluster.local [100.96.85.27])\n\t(Authenticated sender: webafrica)\n\tby relay.mailchannels.net (Postfix) with ESMTPA id C7F548C31CA\n\tfor <58b5c1b6a29f941299cd961a@helpmonks.net>; Wed, 22 May 2019 16:56:51 +0000 (UTC)\n",
+      "X-Sender-Id: _forwarded-from|209.85.222.174\n",
+      "Received: from srv05.hostserv.co.za ([TEMPUNAVAIL]. [41.185.8.105])\n\t(using TLSv1.2 with cipher DHE-RSA-AES256-GCM-SHA384)\n\tby 0.0.0.0:2500 (trex/5.17.2);\n\tWed, 22 May 2019 16:56:56 +0000\n",
+      "X-MC-Relay: Forwarding\n",
+      "X-MailChannels-SenderId: _forwarded-from|209.85.222.174\n",
+      "X-MailChannels-Auth-Id: webafrica\n",
+      "X-Turn-Fumbling: 3ab6ef5b53d510f6_1558544216138_2661952157\n",
+      "X-MC-Loop-Signature: 1558544216138:2187758273\n",
+      "X-MC-Ingress-Time: 1558544216138\n",
+      "Received: from [41.185.250.90] (port=62548 helo=spamtitan-filter09.hostserv.co.za)\n\tby srv05.hostserv.co.za with esmtp (Exim 4.91)\n\t(envelope-from <nyonyobac@gmail.com>)\n\tid 1hTUXb-004qWs-H3\n\tfor sales@togsa.co.za; Wed, 22 May 2019 18:56:39 +0200\n",
+      "Received: from localhost (localhost [127.0.0.1])\n\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id CDF976ED42A3\n\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:36 +0200 (SAST)\n",
+      "X-Quarantine-ID: <C3_X7C82fv3n>\n",
+      "X-Virus-Scanned: by SpamTitan at hostserv.co.za\n",
+      "X-Spam-Level:\n",
+      "Received: from spamtitan-filter09.hostserv.co.za (localhost [127.0.0.1])\n\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id 7F52A6ED435E\n\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:30 +0200 (SAST)\n",
+      "Received: from mail-qk1-f174.google.com (mail-qk1-f174.google.com [209.85.222.174])\n\tby spamtitan-filter09.hostserv.co.za (Postfix) with ESMTP id E4C526ED4356\n\tfor <sales@togsa.co.za>; Wed, 22 May 2019 18:56:16 +0200 (SAST)\n",
+      "Authentication-Results: spamtitan-filter09.hostserv.co.za;\n        dkim=pass (2048-bit rsa key sha256) header.d=gmail.com\n          header.i=@gmail.com header.b=aReHCP5/ header.a=rsa-sha256\n          header.s=20161025 x-bits=2048;\n        x-google-dkim=pass (2048-bit rsa key) header.d=1e100.net\n          header.i=@1e100.net header.b=dKMEe9Sm\n",
+      "Received: by mail-qk1-f174.google.com with SMTP id m18so1917937qki.8\n        for <sales@togsa.co.za>; Wed, 22 May 2019 09:56:15 -0700 (PDT)\n",
+      "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\n        d=gmail.com; s=20161025;\n        h=mime-version:references:in-reply-to:from:date:message-id:subject:to;\n        bh=ewodTwBXTztjsBzUKGr7ooAgbNGDVxrtJ+oHboyQW54=;\n        b=aReHCP5/eIm1eW8nHxXj2QOlHPr8hmsV3n9y2XygFQBYrT9id+0S7oaiwRYavW5pCk\n         fu5NsUSXWfOlcbj90FoatyNcbUS+wiMC6RP4tG5dY++74572gkeoZZduforLN6xYGfwH\n         1Sw71uPcmNcPau4H5k2/OonmjdcI5gB/ucP7S9ehUMd8t8binl0MprKC8NUJs7ucHm/0\n         nfti+j9qDEVzTBdIMWUs09tXtDtfO6WthVt4ekRTTWdfTo+luEbZpjyx/5hMF7mp5R0M\n         hTavKf/2x7NLOlLgfJh6R7Pjpkh4md9kUzBHDTUUlQxAV/l75HBMq3mecBYJcjkr4huy\n         RvSA==\n",
+      "X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\n        d=1e100.net; s=20161025;\n        h=x-gm-message-state:mime-version:references:in-reply-to:from:date\n         :message-id:subject:to;\n        bh=ewodTwBXTztjsBzUKGr7ooAgbNGDVxrtJ+oHboyQW54=;\n        b=dKMEe9SmQ3CdJ+uF2SWo1clBF3DYPCnMEeSrzab2qhwuCWJNBiXHvpBSIOHiVrZdiT\n         PNnQi8oHYZ0Ajvp1kzAwvti4I8JgUgj4S6aQoUx1tEpqzqPM729nDH6YA5kIqvrAvVbQ\n         jFgkTFHaDcQV/HeGzkGj8DsdRDSgOALa6boJYnIAsbX9UXlcLyDWkXgDE1eETRjiWlaG\n         6eO+FlVqhgRaFXwkmm+KyFDUEs+LKptLP7FicVu+TQIOxFTvE4DsiexLOaCNB6ChaUIc\n         Ieero5AHEwppYotIBCI7vG67qTXEowWqFJBvHc22K74w3u9gQRxQ6FjsAwfLcOX1Rj00\n         TfZg==\n",
+      "X-Gm-Message-State: APjAAAV43fASsTaTxZmLQnptS63GWIKBZmqLu5m7/5huobAFKuLQybSW\n\to41UN92qdpGPh6SolfntyNil3v3D1y1SvrLPIMVHNg==\n",
+      "X-Google-Smtp-Source: APXvYqxdGLrHsFislrLuOAdSRVG9qfQsdRufQPeHYbBLMFowIMrkU6+gp5sGuG5VJTpGHMYEmfAVnlElHc4QuKnOM6Q=\n",
+      "X-Received: by 2002:a37:351:: with SMTP id 78mr69802151qkd.147.1558544173191;\n Wed, 22 May 2019 09:56:13 -0700 (PDT)\n",
+      "MIME-Version: 1.0\n",
+      "References: <CADXPB9UJO54hJ3fLjNkT_gKYugMypg0vr1wjqGonyJvRn8QHxA@mail.gmail.com>\n <5ce4e9a65f983337b2e0279d_58b5c1b6a29f941299cd961a_1558505894@helpmonks.com> <CADXPB9WYAYFpCzjiq1bEye0rgfvNDomBJLvObh3PuMcwE4WDDg@mail.gmail.com>\n",
+      "In-Reply-To: <CADXPB9WYAYFpCzjiq1bEye0rgfvNDomBJLvObh3PuMcwE4WDDg@mail.gmail.com>\n",
+      "From: Nyonyoba Communications <nyonyobac@gmail.com>\n",
+      "Date: Wed, 22 May 2019 18:56:02 +0200\n",
+      "Message-ID: <CADXPB9WEMw44XP-b0BWXv5cxaGXwNjwAPojmrW0rUpYXpU6nUw@mail.gmail.com>\n",
+      "Subject: Re: Order\n",
+      "To: Trade Only Gifts Sales <sales@togsa.co.za>\n",
+      "Content-Type: multipart/mixed; boundary=\"000000000000d1033205897cd70c\"\n",
+      "X-AuthUser: \n",
+      "Original-Authentication-Results: spamtitan-filter09.hostserv.co.za;\n        dkim=pass (2048-bit rsa key sha256) header.d=gmail.com\n          header.i=@gmail.com header.b=aReHCP5/ header.a=rsa-sha256\n          header.s=20161025 x-bits=2048;\n        x-google-dkim=pass (2048-bit rsa key) header.d=1e100.net\n          header.i=@1e100.net header.b=dKMEe9Sm\n"
+    ],
+    "options": null
+  },
+  "header_lines": [
+    
+  ],
+  "is_html": false,
+  "options": {
+    
+  },
+  "filters": [
+    
+  ],
+  "bodytext": "",
+  "body_text_encoded": "",
+  "body_encoding": "UTF-8",
+  "boundary": "000000000000d1033205897cd70c",
+  "ct": "multipart/mixed; boundary=\"000000000000d1033205897cd70c\"",
+  "children": [
+    {
+      "_events": {
+        
+      },
+      "_eventsCount": 1,
+      "_maxListeners": null,
+      "header": {
+        "headers": {
+          "content-type": [
+            "multipart/alternative; boundary=\"000000000000d1032b05897cd70a\"\n"
+          ]
+        },
+        "headers_decoded": {
+          "content-type": [
+            "multipart/alternative; boundary=\"000000000000d1032b05897cd70a\""
+          ]
+        },
+        "header_list": [
+          "Content-Type: multipart/alternative; boundary=\"000000000000d1032b05897cd70a\"\n"
+        ],
+        "options": null
+      },
+      "is_html": false,
+      "options": {
+        
+      },
+      "filters": [
+        
+      ],
+      "bodytext": "",
+      "body_text_encoded": "",
+      "body_encoding": "UTF-8",
+      "boundary": "000000000000d1032b05897cd70a",
+      "ct": "multipart/alternative; boundary=\"000000000000d1032b05897cd70a\"",
+      "children": [
+        {
+          "_events": {
+            
+          },
+          "_eventsCount": 1,
+          "_maxListeners": null,
+          "header": {
+            "headers": {
+              "content-type": [
+                "text/plain; charset=\"UTF-8\"\n"
+              ],
+              "content-transfer-encoding": [
+                "quoted-printable\n"
+              ]
+            },
+            "headers_decoded": {
+              "content-type": [
+                "text/plain; charset=\"UTF-8\""
+              ],
+              "content-transfer-encoding": [
+                "quoted-printable"
+              ]
+            },
+            "header_list": [
+              "Content-Type: text/plain; charset=\"UTF-8\"\n",
+              "Content-Transfer-Encoding: quoted-printable\n"
+            ],
+            "options": null
+          },
+          "is_html": false,
+          "options": {
+            
+          },
+          "filters": [
+            
+          ],
+          "bodytext": "Hi\n\nWith the attached logo in one color. Also see logo done by another supplier\nit must the same\n\nKind regards\nBanele\n\nOn Wed, 22 May 2019 at 18:49, Nyonyoba Communications <nyonyobac@gmail.com>\nwrote:\n\n> Yes, please proceed with the order.\n>\n> colour - blue\n>\n> On Wed, 22 May 2019 at 08:18, Trade Only Gifts Sales <sales@togsa.co.za>\n> wrote:\n>\n>> Good morning, Thank you for your order. Kindly spercify the colour that\n>> you you want for the PN003 neo pens. Please don’t hesitate to contact me\n>> Good morning, Thank you for your order. Kindly spercify the colour that\n>> you you want for the PN003 neo pens. Please don’t hesitate to contact me\n>> --- Please reply above this line ---\n>> Good morning,\n>>\n>> Thank you for your order.\n>>\n>> Kindly spercify the colour that you you want for the PN003 neo pens.\n>>\n>> --\n>> Please don’t hesitate to contact me with any further queries.\n>>\n>> Kind regards\n>>\n>> *Nonhlanhla*\n>> Sales Consultant\n>> --------------------------------------\n>> Trade Only Gifts\n>> DIRECT IMPORTERS OF CORPORATE GIFTS\n>> Tel: 011 608 3383\n>> Direct Ext 5015\n>> Email: sales@togsa.co.za\n>> Web: www.tradeonlygifts.co.za\n>> Physical Address:\n>> 2 Emifula Boulevard, Longmeadow Business Park Ext.11, Modderfontein, 1609\n>> Postal Address:\n>> P.O. Box 8004, Greenstone, 1616\n>>\n>>\n>> -HMSTOPPARSER-\n>>\n>> *On Tuesday, May 21st 2019, 11:48 am EDT (-0400), Nyonyoba Communications\n>> wrote:*\n>>\n>> Can I please order\n>>  600 x  Neo Pen  PN003\n>>\n>>\n>> [\n>> HM_5ce4e9a65f983337b2e0279d_HM_58b5c1b6a29f941299cd961a_1558505894@helpmonks.com\n>> ,\n>> 5ce41e177d829c71a58ef78b_HM_58b5c1b6a29f941299cd961a_1558453783@helpmonks.com\n>> ]\n>>\n>\n\n",
+          "body_text_encoded": "Hi\n\nWith the attached logo in one color. Also see logo done by another supplier\nit must the same\n\nKind regards\nBanele\n\nOn Wed, 22 May 2019 at 18:49, Nyonyoba Communications <nyonyobac@gmail.com>\nwrote:\n\n> Yes, please proceed with the order.\n>\n> colour - blue\n>\n> On Wed, 22 May 2019 at 08:18, Trade Only Gifts Sales <sales@togsa.co.za>\n> wrote:\n>\n>> Good morning, Thank you for your order. Kindly spercify the colour that\n>> you you want for the PN003 neo pens. Please don=E2=80=99t hesitate to co=\nntact me\n>> Good morning, Thank you for your order. Kindly spercify the colour that\n>> you you want for the PN003 neo pens. Please don=E2=80=99t hesitate to co=\nntact me\n>> --- Please reply above this line ---\n>> Good morning,\n>>\n>> Thank you for your order.\n>>\n>> Kindly spercify the colour that you you want for the PN003 neo pens.\n>>\n>> --\n>> Please don=E2=80=99t hesitate to contact me with any further queries.\n>>\n>> Kind regards\n>>\n>> *Nonhlanhla*\n>> Sales Consultant\n>> --------------------------------------\n>> Trade Only Gifts\n>> DIRECT IMPORTERS OF CORPORATE GIFTS\n>> Tel: 011 608 3383\n>> Direct Ext 5015\n>> Email: sales@togsa.co.za\n>> Web: www.tradeonlygifts.co.za\n>> Physical Address:\n>> 2 Emifula Boulevard, Longmeadow Business Park Ext.11, Modderfontein, 160=\n9\n>> Postal Address:\n>> P.O. Box 8004, Greenstone, 1616\n>>\n>>\n>> -HMSTOPPARSER-\n>>\n>> *On Tuesday, May 21st 2019, 11:48 am EDT (-0400), Nyonyoba Communication=\ns\n>> wrote:*\n>>\n>> Can I please order\n>>  600 x  Neo Pen  PN003\n>>\n>>\n>> [\n>> HM_5ce4e9a65f983337b2e0279d_HM_58b5c1b6a29f941299cd961a_1558505894@helpm=\nonks.com\n>> ,\n>> 5ce41e177d829c71a58ef78b_HM_58b5c1b6a29f941299cd961a_1558453783@helpmonk=\ns.com\n>> ]\n>>\n>\n\n",
+          "body_encoding": "UTF-8",
+          "boundary": null,
+          "ct": "text/plain; charset=\"UTF-8\"",
+          "children": [
+            
+          ],
+          "state": "body",
+          "buf_fill": 0,
+          "decode_accumulator": ""
+        },
+        {
+          "_events": {
+            
+          },
+          "_eventsCount": 1,
+          "_maxListeners": null,
+          "header": {
+            "headers": {
+              "content-type": [
+                "text/html; charset=\"UTF-8\"\n"
+              ],
+              "content-transfer-encoding": [
+                "quoted-printable\n"
+              ]
+            },
+            "headers_decoded": {
+              "content-type": [
+                "text/html; charset=\"UTF-8\""
+              ],
+              "content-transfer-encoding": [
+                "quoted-printable"
+              ]
+            },
+            "header_list": [
+              "Content-Type: text/html; charset=\"UTF-8\"\n",
+              "Content-Transfer-Encoding: quoted-printable\n"
+            ],
+            "options": null
+          },
+          "is_html": true,
+          "options": {
+            
+          },
+          "filters": [
+            
+          ],
+          "bodytext": "<div dir=\"ltr\">Hi <div><br></div><div>With the attached logo in one color. Also see logo done by another supplier it must the same </div><div><br></div><div>Kind regards</div><div>Banele</div></div><br><div class=\"gmail_quote\"><div dir=\"ltr\" class=\"gmail_attr\">On Wed, 22 May 2019 at 18:49, Nyonyoba Communications &lt;<a href=\"mailto:nyonyobac@gmail.com\">nyonyobac@gmail.com</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\"><div dir=\"ltr\">Yes, please proceed with the order. <br><div><br></div><div>colour - blue</div></div><br><div class=\"gmail_quote\"><div dir=\"ltr\" class=\"gmail_attr\">On Wed, 22 May 2019 at 08:18, Trade Only Gifts Sales &lt;<a href=\"mailto:sales@togsa.co.za\" target=\"_blank\">sales@togsa.co.za</a>&gt; wrote:<br></div><blockquote class=\"gmail_quote\" style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\"><u></u><div><span class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107hmPreviewText\" style=\"font-size:0px;line-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none\">Good morning, Thank you for your order. Kindly spercify the colour that you you want for the PN003 neo pens.  Please don’t hesitate to contact me</span><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" height=\"100%\" width=\"100%\" class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107bodyTable\" style=\"margin:0px;padding:0px;width:100%;line-height:1.25em;font-size:15px;word-break:break-word\"><tbody><tr><td width=\"100%\" align=\"left\" valign=\"top\" class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107bodyCell\" style=\"max-width:700px\"><table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107emailBody\" style=\"max-width:700px;display:inline-flex\"><tbody><tr><td valign=\"top\" style=\"padding-bottom:30px\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"><tbody><tr id=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107DO_NOT_PARSE\" style=\"padding:0px;margin:0px;height:0px;display:none\"><td style=\"font-size:0px;color:rgb(255,255,255);padding:0px;margin:0px;height:0px;display:none\"><span style=\"font-size:0px;color:rgb(255,255,255);line-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none\">Good morning, Thank you for your order. Kindly spercify the colour that you you want for the PN003 neo pens.  Please don’t hesitate to contact me</span></td></tr><tr style=\"padding:0px;margin:0px;height:0px;display:none\"><td style=\"font-size:0px;color:rgb(255,255,255);padding:0px;margin:0px;height:0px;display:none\"><span style=\"font-size:0px;color:rgb(255,255,255);line-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none\">--- Please reply above this line ---</span></td></tr><tr><td><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107hm_text\"><tbody><tr><td style=\"line-height:20px\">Good morning,<br><br>Thank you for your order.<br><br>Kindly spercify the colour that you you want for the PN003 neo pens.<br><br><div class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107hm-sig-dashes\">--</div><div class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107hm-signature\" id=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107HM_SIGNATURE\">Please don’t hesitate to contact me with any further queries.<br><br>Kind regards<br><br><strong>Nonhlanhla</strong><br>Sales Consultant<br>--------------------------------------<br>Trade Only Gifts<br>DIRECT IMPORTERS OF CORPORATE GIFTS<br>Tel: 011 608 3383<br>Direct Ext 5015<br>Email: <a href=\"mailto:sales@togsa.co.za\" target=\"_blank\">sales@togsa.co.za</a><br>Web: <a href=\"http://www.tradeonlygifts.co.za\" rel=\"noopener noreferrer\" target=\"_blank\">www.tradeonlygifts.co.za</a><br>Physical Address:<br>2 Emifula Boulevard, Longmeadow Business Park Ext.11, Modderfontein, 1609<br>Postal Address:<br>P.O. Box 8004, Greenstone, 1616<br><br><br></div></td></tr></tbody></table></td></tr><tr style=\"padding:0px;margin:0px;height:0px;display:none\"><td style=\"font-size:0px;color:rgb(255,255,255);padding:0px;margin:0px;height:0px;display:none\"><span style=\"font-size:0px;color:rgb(255,255,255);line-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none\"> -HMSTOPPARSER- </span></td></tr><tr><td><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" class=\"gmail-m_1606704725304132896gmail-m_-9143960395849504107hm_text\"><tbody><tr><td><br><strong style=\"font-size:14px\">On Tuesday, May 21st 2019, 11:48 am EDT (-0400), Nyonyoba Communications wrote:</strong><br><br><blockquote style=\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex\"><div dir=\"ltr\">Can I please order<div> 600 x  Neo Pen  PN003</div></div><br><br></blockquote></td></tr></tbody></table></td></tr><tr style=\"padding:0px;margin:0px;height:0px;display:none\"><td style=\"font-size:0px;color:rgb(255,255,255);padding:0px;margin:0px;height:0px;display:none\"><span style=\"font-size:0px;color:rgb(255,255,255);line-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none\">[<a href=\"mailto:HM_5ce4e9a65f983337b2e0279d_HM_58b5c1b6a29f941299cd961a_1558505894@helpmonks.com\" target=\"_blank\">HM_5ce4e9a65f983337b2e0279d_HM_58b5c1b6a29f941299cd961a_1558505894@helpmonks.com</a>,<a href=\"mailto:5ce41e177d829c71a58ef78b_HM_58b5c1b6a29f941299cd961a_1558453783@helpmonks.com\" target=\"_blank\">5ce41e177d829c71a58ef78b_HM_58b5c1b6a29f941299cd961a_1558453783@helpmonks.com</a>]</span></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></div>\n</blockquote></div>\n</blockquote></div>\n\n",
+          "body_text_encoded": "<div dir=3D\"ltr\">Hi=C2=A0<div><br></div><div>With the attached logo in one =\ncolor. Also see logo done by another supplier it must the same=C2=A0</div><=\ndiv><br></div><div>Kind regards</div><div>Banele</div></div><br><div class=\n=3D\"gmail_quote\"><div dir=3D\"ltr\" class=3D\"gmail_attr\">On Wed, 22 May 2019 =\nat 18:49, Nyonyoba Communications &lt;<a href=3D\"mailto:nyonyobac@gmail.com=\n\">nyonyobac@gmail.com</a>&gt; wrote:<br></div><blockquote class=3D\"gmail_qu=\note\" style=3D\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,20=\n4);padding-left:1ex\"><div dir=3D\"ltr\">Yes, please proceed with the order.=\n=C2=A0<br><div><br></div><div>colour - blue</div></div><br><div class=3D\"gm=\nail_quote\"><div dir=3D\"ltr\" class=3D\"gmail_attr\">On Wed, 22 May 2019 at 08:=\n18, Trade Only Gifts Sales &lt;<a href=3D\"mailto:sales@togsa.co.za\" target=\n=3D\"_blank\">sales@togsa.co.za</a>&gt; wrote:<br></div><blockquote class=3D\"=\ngmail_quote\" style=3D\"margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(20=\n4,204,204);padding-left:1ex\"><u></u><div><span class=3D\"gmail-m_16067047253=\n04132896gmail-m_-9143960395849504107hmPreviewText\" style=3D\"font-size:0px;l=\nine-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;displ=\nay:none\">Good morning, Thank you for your order. Kindly spercify the colour=\n that you you want for the PN003 neo pens.  Please don=E2=80=99t hesitate t=\no contact me</span><table border=3D\"0\" cellpadding=3D\"0\" cellspacing=3D\"0\" =\nheight=3D\"100%\" width=3D\"100%\" class=3D\"gmail-m_1606704725304132896gmail-m_=\n-9143960395849504107bodyTable\" style=3D\"margin:0px;padding:0px;width:100%;l=\nine-height:1.25em;font-size:15px;word-break:break-word\"><tbody><tr><td widt=\nh=3D\"100%\" align=3D\"left\" valign=3D\"top\" class=3D\"gmail-m_16067047253041328=\n96gmail-m_-9143960395849504107bodyCell\" style=3D\"max-width:700px\"><table bo=\nrder=3D\"0\" cellpadding=3D\"0\" cellspacing=3D\"0\" class=3D\"gmail-m_16067047253=\n04132896gmail-m_-9143960395849504107emailBody\" style=3D\"max-width:700px;dis=\nplay:inline-flex\"><tbody><tr><td valign=3D\"top\" style=3D\"padding-bottom:30p=\nx\"><table width=3D\"100%\" cellpadding=3D\"0\" cellspacing=3D\"0\" border=3D\"0\"><=\ntbody><tr id=3D\"gmail-m_1606704725304132896gmail-m_-9143960395849504107DO_N=\nOT_PARSE\" style=3D\"padding:0px;margin:0px;height:0px;display:none\"><td styl=\ne=3D\"font-size:0px;color:rgb(255,255,255);padding:0px;margin:0px;height:0px=\n;display:none\"><span style=3D\"font-size:0px;color:rgb(255,255,255);line-hei=\nght:0px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none=\n\">Good morning, Thank you for your order. Kindly spercify the colour that y=\nou you want for the PN003 neo pens.  Please don=E2=80=99t hesitate to conta=\nct me</span></td></tr><tr style=3D\"padding:0px;margin:0px;height:0px;displa=\ny:none\"><td style=3D\"font-size:0px;color:rgb(255,255,255);padding:0px;margi=\nn:0px;height:0px;display:none\"><span style=3D\"font-size:0px;color:rgb(255,2=\n55,255);line-height:0px;max-height:0px;max-width:0px;opacity:0;overflow:hid=\nden;display:none\">--- Please reply above this line ---</span></td></tr><tr>=\n<td><table width=3D\"100%\" cellpadding=3D\"0\" cellspacing=3D\"0\" border=3D\"0\" =\nclass=3D\"gmail-m_1606704725304132896gmail-m_-9143960395849504107hm_text\"><t=\nbody><tr><td style=3D\"line-height:20px\">Good morning,<br><br>Thank you for =\nyour order.<br><br>Kindly spercify the colour that you you want for the PN0=\n03 neo pens.<br><br><div class=3D\"gmail-m_1606704725304132896gmail-m_-91439=\n60395849504107hm-sig-dashes\">--</div><div class=3D\"gmail-m_1606704725304132=\n896gmail-m_-9143960395849504107hm-signature\" id=3D\"gmail-m_1606704725304132=\n896gmail-m_-9143960395849504107HM_SIGNATURE\">Please don=E2=80=99t hesitate =\nto contact me with any further queries.<br><br>Kind regards<br><br><strong>=\nNonhlanhla</strong><br>Sales Consultant<br>--------------------------------=\n------<br>Trade Only Gifts<br>DIRECT IMPORTERS OF CORPORATE GIFTS<br>Tel: 0=\n11 608 3383<br>Direct Ext 5015<br>Email: <a href=3D\"mailto:sales@togsa.co.z=\na\" target=3D\"_blank\">sales@togsa.co.za</a><br>Web: <a href=3D\"http://www.tr=\nadeonlygifts.co.za\" rel=3D\"noopener noreferrer\" target=3D\"_blank\">www.trade=\nonlygifts.co.za</a><br>Physical Address:<br>2 Emifula Boulevard, Longmeadow=\n Business Park Ext.11, Modderfontein, 1609<br>Postal Address:<br>P.O. Box 8=\n004, Greenstone, 1616<br><br><br></div></td></tr></tbody></table></td></tr>=\n<tr style=3D\"padding:0px;margin:0px;height:0px;display:none\"><td style=3D\"f=\nont-size:0px;color:rgb(255,255,255);padding:0px;margin:0px;height:0px;displ=\nay:none\"><span style=3D\"font-size:0px;color:rgb(255,255,255);line-height:0p=\nx;max-height:0px;max-width:0px;opacity:0;overflow:hidden;display:none\"> -HM=\nSTOPPARSER- </span></td></tr><tr><td><table width=3D\"100%\" cellpadding=3D\"0=\n\" cellspacing=3D\"0\" border=3D\"0\" class=3D\"gmail-m_1606704725304132896gmail-=\nm_-9143960395849504107hm_text\"><tbody><tr><td><br><strong style=3D\"font-siz=\ne:14px\">On Tuesday, May 21st 2019, 11:48 am EDT (-0400), Nyonyoba Communica=\ntions wrote:</strong><br><br><blockquote style=3D\"margin:0px 0px 0px 0.8ex;=\nborder-left:1px solid rgb(204,204,204);padding-left:1ex\"><div dir=3D\"ltr\">C=\nan I please order<div>=C2=A0600 x=C2=A0=C2=A0Neo Pen=C2=A0 PN003</div></div=\n><br><br></blockquote></td></tr></tbody></table></td></tr><tr style=3D\"padd=\ning:0px;margin:0px;height:0px;display:none\"><td style=3D\"font-size:0px;colo=\nr:rgb(255,255,255);padding:0px;margin:0px;height:0px;display:none\"><span st=\nyle=3D\"font-size:0px;color:rgb(255,255,255);line-height:0px;max-height:0px;=\nmax-width:0px;opacity:0;overflow:hidden;display:none\">[<a href=3D\"mailto:HM=\n_5ce4e9a65f983337b2e0279d_HM_58b5c1b6a29f941299cd961a_1558505894@helpmonks.=\ncom\" target=3D\"_blank\">HM_5ce4e9a65f983337b2e0279d_HM_58b5c1b6a29f941299cd9=\n61a_1558505894@helpmonks.com</a>,<a href=3D\"mailto:5ce41e177d829c71a58ef78b=\n_HM_58b5c1b6a29f941299cd961a_1558453783@helpmonks.com\" target=3D\"_blank\">5c=\ne41e177d829c71a58ef78b_HM_58b5c1b6a29f941299cd961a_1558453783@helpmonks.com=\n</a>]</span></td></tr></tbody></table></td></tr></tbody></table></td></tr><=\n/tbody></table></div>\n</blockquote></div>\n</blockquote></div>\n\n",
+          "body_encoding": "UTF-8",
+          "boundary": null,
+          "ct": "text/html; charset=\"UTF-8\"",
+          "children": [
+            
+          ],
+          "state": "body",
+          "buf_fill": 0,
+          "decode_accumulator": ""
+        }
+      ],
+      "state": "end",
+      "buf_fill": 0,
+      "decode_accumulator": ""
+    },
+    {
+      "_events": {
+        
+      },
+      "_eventsCount": 1,
+      "_maxListeners": null,
+      "header": {
+        "headers": {
+          "content-type": [
+            "application/pdf; \n\tname=\"20183 midvaal local municipality proudly logo print.pdf\"\n"
+          ],
+          "content-disposition": [
+            "attachment; \n\tfilename=\"20183 midvaal local municipality proudly logo print.pdf\"\n"
+          ],
+          "content-transfer-encoding": [
+            "base64\n"
+          ],
+          "content-id": [
+            "<f_jvzgvpbj0>\n"
+          ],
+          "x-attachment-id": [
+            "f_jvzgvpbj0\n"
+          ]
+        },
+        "headers_decoded": {
+          "content-type": [
+            "application/pdf; \tname=\"20183 midvaal local municipality proudly logo print.pdf\""
+          ],
+          "content-disposition": [
+            "attachment; \tfilename=\"20183 midvaal local municipality proudly logo print.pdf\""
+          ],
+          "content-transfer-encoding": [
+            "base64"
+          ],
+          "content-id": [
+            "<f_jvzgvpbj0>"
+          ],
+          "x-attachment-id": [
+            "f_jvzgvpbj0"
+          ]
+        },
+        "header_list": [
+          "Content-Type: application/pdf; \n\tname=\"20183 midvaal local municipality proudly logo print.pdf\"\n",
+          "Content-Disposition: attachment; \n\tfilename=\"20183 midvaal local municipality proudly logo print.pdf\"\n",
+          "Content-Transfer-Encoding: base64\n",
+          "Content-ID: <f_jvzgvpbj0>\n",
+          "X-Attachment-Id: f_jvzgvpbj0\n"
+        ],
+        "options": null
+      },
+      "is_html": false,
+      "options": {
+        
+      },
+      "filters": [
+        
+      ],
+      "bodytext": "",
+      "body_text_encoded": "",
+      "body_encoding": "UTF-8",
+      "boundary": null,
+      "ct": "application/pdf; \tname=\"20183 midvaal local municipality proudly logo print.pdf\"",
+      "children": [
+        
+      ],
+      "state": "attachment",
+      "buf_fill": 48392,
+      "decode_accumulator": "",
+      "attachment_stream": {
+        "_events": {
+          
+        },
+        "_eventsCount": 0,
+        "_maxListeners": null,
+        "header": {
+          "headers": {
+            "content-type": [
+              "application/pdf; \n\tname=\"20183 midvaal local municipality proudly logo print.pdf\"\n"
+            ],
+            "content-disposition": [
+              "attachment; \n\tfilename=\"20183 midvaal local municipality proudly logo print.pdf\"\n"
+            ],
+            "content-transfer-encoding": [
+              "base64\n"
+            ],
+            "content-id": [
+              "<f_jvzgvpbj0>\n"
+            ],
+            "x-attachment-id": [
+              "f_jvzgvpbj0\n"
+            ]
+          },
+          "headers_decoded": {
+            "content-type": [
+              "application/pdf; \tname=\"20183 midvaal local municipality proudly logo print.pdf\""
+            ],
+            "content-disposition": [
+              "attachment; \tfilename=\"20183 midvaal local municipality proudly logo print.pdf\""
+            ],
+            "content-transfer-encoding": [
+              "base64"
+            ],
+            "content-id": [
+              "<f_jvzgvpbj0>"
+            ],
+            "x-attachment-id": [
+              "f_jvzgvpbj0"
+            ]
+          },
+          "header_list": [
+            "Content-Type: application/pdf; \n\tname=\"20183 midvaal local municipality proudly logo print.pdf\"\n",
+            "Content-Disposition: attachment; \n\tfilename=\"20183 midvaal local municipality proudly logo print.pdf\"\n",
+            "Content-Transfer-Encoding: base64\n",
+            "Content-ID: <f_jvzgvpbj0>\n",
+            "X-Attachment-Id: f_jvzgvpbj0\n"
+          ],
+          "options": null
+        },
+        "encoding": null,
+        "paused": false,
+        "end_emitted": false,
+        "connection": null,
+        "buffer": [
+          
+        ]
+      }
+    },
+    {
+      "_events": {
+        
+      },
+      "_eventsCount": 1,
+      "_maxListeners": null,
+      "header": {
+        "headers": {
+          "content-type": [
+            "application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\"\n"
+          ],
+          "content-disposition": [
+            "attachment; \n\tfilename=\"JC02754777-003-JC02754777-003[002].pdf\"\n"
+          ],
+          "content-transfer-encoding": [
+            "base64\n"
+          ],
+          "content-id": [
+            "<f_jvzgwhag1>\n"
+          ],
+          "x-attachment-id": [
+            "f_jvzgwhag1\n"
+          ]
+        },
+        "headers_decoded": {
+          "content-type": [
+            "application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\""
+          ],
+          "content-disposition": [
+            "attachment; \tfilename=\"JC02754777-003-JC02754777-003[002].pdf\""
+          ],
+          "content-transfer-encoding": [
+            "base64"
+          ],
+          "content-id": [
+            "<f_jvzgwhag1>"
+          ],
+          "x-attachment-id": [
+            "f_jvzgwhag1"
+          ]
+        },
+        "header_list": [
+          "Content-Type: application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\"\n",
+          "Content-Disposition: attachment; \n\tfilename=\"JC02754777-003-JC02754777-003[002].pdf\"\n",
+          "Content-Transfer-Encoding: base64\n",
+          "Content-ID: <f_jvzgwhag1>\n",
+          "X-Attachment-Id: f_jvzgwhag1\n"
+        ],
+        "options": null
+      },
+      "is_html": false,
+      "options": {
+        
+      },
+      "filters": [
+        
+      ],
+      "bodytext": "",
+      "body_text_encoded": "",
+      "body_encoding": "UTF-8",
+      "boundary": null,
+      "ct": "application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\"",
+      "children": [
+        
+      ],
+      "state": "attachment",
+      "buf_fill": 2054,
+      "decode_accumulator": "",
+      "attachment_stream": {
+        "_events": {
+          
+        },
+        "_eventsCount": 0,
+        "_maxListeners": null,
+        "header": {
+          "headers": {
+            "content-type": [
+              "application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\"\n"
+            ],
+            "content-disposition": [
+              "attachment; \n\tfilename=\"JC02754777-003-JC02754777-003[002].pdf\"\n"
+            ],
+            "content-transfer-encoding": [
+              "base64\n"
+            ],
+            "content-id": [
+              "<f_jvzgwhag1>\n"
+            ],
+            "x-attachment-id": [
+              "f_jvzgwhag1\n"
+            ]
+          },
+          "headers_decoded": {
+            "content-type": [
+              "application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\""
+            ],
+            "content-disposition": [
+              "attachment; \tfilename=\"JC02754777-003-JC02754777-003[002].pdf\""
+            ],
+            "content-transfer-encoding": [
+              "base64"
+            ],
+            "content-id": [
+              "<f_jvzgwhag1>"
+            ],
+            "x-attachment-id": [
+              "f_jvzgwhag1"
+            ]
+          },
+          "header_list": [
+            "Content-Type: application/pdf; name=\"JC02754777-003-JC02754777-003[002].pdf\"\n",
+            "Content-Disposition: attachment; \n\tfilename=\"JC02754777-003-JC02754777-003[002].pdf\"\n",
+            "Content-Transfer-Encoding: base64\n",
+            "Content-ID: <f_jvzgwhag1>\n",
+            "X-Attachment-Id: f_jvzgwhag1\n"
+          ],
+          "options": null
+        },
+        "encoding": null,
+        "paused": false,
+        "end_emitted": false,
+        "connection": null,
+        "buffer": [
+          
+        ]
+      }
+    }
+  ],
+  "state": "end",
+  "buf_fill": 0,
+  "decode_accumulator": ""
+}

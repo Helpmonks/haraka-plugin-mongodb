@@ -121,118 +121,57 @@ exports.queue_to_mongodb = function(next, connection) {
 		// plugin.lognotice(' email_object.text ', email_object.text);
 		// plugin.lognotice('--------------------------------------');
 
-		// simpleParser(connection.transaction.message_stream, (error, mail) => {
+		// Get proper body
+		var _body_html = _extractHtmlBody(email_object, body);
 
-		// 	plugin.lognotice('--------------------------------------');
-		// 	plugin.lognotice(' PARSER2 ', mail.html);
-		// 	plugin.lognotice('--------------------------------------');
+		// Mail object
+		var _email = {
+			'haraka_body': body ? body : null,
+			'raw': email_object,
+			'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
+			'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,
+			'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
+			'bcc': email_object.headers.get('bcc') ? email_object.headers.get('bcc').value : null,
+			'subject': email_object.subject,
+			'date': email_object.date,
+			'received_date': email_object.headers.get('date') ? email_object.headers.get('date') : null,
+			'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
+			'attachments': email_object.attachments || [],
+			'headers': email_object.headers,
+			'html': _body_html,
+			'text': email_object.text ? email_object.text : null,
+			'timestamp': new Date(),
+			'status': 'unprocessed',
+			'source': 'haraka',
+			'in_reply_to' : email_object.inReplyTo,
+			'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
+			'references' : email_object.references,
+			'pickup_date' : new Date(),
+			'mail_from' : connection.transaction.mail_from,
+			'rcpt_to' : connection.transaction.rcpt_to,
+			'size' : connection.transaction.data_bytes,
+			'transferred' : false
+		};
 
-			// Object.keys(email_object).forEach(function(key) {
-			// 	var _val = email_object[key];
-			// 	if (typeof _val === 'object') {
-			// 		Object.keys(_val).forEach(function(_val_key) {
-			// 			var _vall = _val[_val_key];
-			// 			plugin.lognotice(`${_val_key} : ${_vall}`);
-			// 		})
-			// 	}
-			// 	plugin.lognotice(`${key} : ${_val}`);
-			// });
+		// plugin.lognotice('--------------------------------------');
+		// plugin.lognotice(' Server notes !!! ');
+		// plugin.lognotice(' server.notes : ', server.notes);
+		// plugin.lognotice(' server.notes.mongodb : ', server.notes.mongodb);
+		// plugin.lognotice('--------------------------------------');
 
-			// var _email = {
-			// 	'raw': email_object,
-			// 	'from': email_object.from,
-			// 	'to': email_object.to,
-			// 	'cc': email_object.cc,
-			// 	'bcc': email_object.bcc,
-			// 	'subject': email_object.subject,
-			// 	'date': email_object.date,
-			// 	'received_date': email_object.receivedDate,
-			// 	'message_id': email_object.messageId || new ObjectID() + '@haraka',
-			// 	'attachments': email_object.attachments || [],
-			// 	'headers': email_object.headers,
-			// 	'html': email_object.html,
-			// 	'text': email_object.text,
-			// 	'timestamp': new Date(),
-			// 	'status': 'unprocessed',
-			// 	'source': 'haraka',
-			// 	'in_reply_to' : email_object.inReplyTo,
-			// 	'reply_to' : email_object.replyTo,
-			// 	'references' : email_object.references,
-			// 	'pickup_date' : new Date(),
-			// 	'mail_from' : connection.transaction.mail_from,
-			// 	'rcpt_to' : connection.transaction.rcpt_to,
-			// 	'size' : connection.transaction.data_bytes,
-			// 	'transferred' : false
-			// };
-
-			// References
-			// var _references = [];
-			// if (email_object.references) {
-			// 	if ( Array.isArray(email_object.references) ) {
-			// 		_references = email_object.references.map(r => r.replace(/<|>/gm, ''));
-			// 	}
-			// 	_references = email_object.references.replace(/<|>/gm, '').split('');
-			// }
-
-			var _body_html = email_object.html ? email_object.html : email_object.textAsHtml ? email_object.textAsHtml : null;
-			if ( !_body_html && body && body.bodytext )	_body_html = body.bodytext;
-			if ( !_body_html && body.children && body.children.length ) {
-				if ( body.children[0].is_html ) _body_html = body.children[0].bodytext;
-				if ( !_body_html && body.children[1] && body.children[1].is_html ) _body_html = body.children[1].bodytext;
-				if ( !_body_html ) _body_html = body.children[0].bodytext;
+		server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
+			if (err) {
+				plugin.logerror('--------------------------------------');
+				plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err);
+				plugin.logerror('--------------------------------------');
+				next(DENY, "storage error");
+			} else {
+				plugin.lognotice('--------------------------------------');
+				plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
+				plugin.lognotice('--------------------------------------');
+				next(OK);
 			}
-
-
-
-			// MP 2.2 code
-			var _email = {
-				'raw': email_object,
-				'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
-				'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,
-				'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
-				'bcc': email_object.headers.get('bcc') ? email_object.headers.get('bcc').value : null,
-				'subject': email_object.subject,
-				'date': email_object.date,
-				'received_date': email_object.headers.get('date') ? email_object.headers.get('date') : null,
-				'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
-				'attachments': email_object.attachments || [],
-				'headers': email_object.headers,
-				'html': _body_html,
-				'text': email_object.text ? email_object.text : null,
-				'timestamp': new Date(),
-				'status': 'unprocessed',
-				'source': 'haraka',
-				'in_reply_to' : email_object.inReplyTo,
-				'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
-				'references' : email_object.references,
-				'pickup_date' : new Date(),
-				'mail_from' : connection.transaction.mail_from,
-				'rcpt_to' : connection.transaction.rcpt_to,
-				'size' : connection.transaction.data_bytes,
-				'transferred' : false
-			};
-
-			// plugin.lognotice('--------------------------------------');
-			// plugin.lognotice(' Server notes !!! ');
-			// plugin.lognotice(' server.notes : ', server.notes);
-			// plugin.lognotice(' server.notes.mongodb : ', server.notes.mongodb);
-			// plugin.lognotice('--------------------------------------');
-
-			server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
-				if (err) {
-					plugin.logerror('--------------------------------------');
-					plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err);
-					plugin.logerror('--------------------------------------');
-					next(DENY, "storage error");
-				} else {
-					plugin.lognotice('--------------------------------------');
-					plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
-					plugin.lognotice('--------------------------------------');
-					next(OK);
-				}
-			});
-
-		// })
+		});
 
 	});
 
@@ -412,6 +351,31 @@ exports.shutdown = function() {
 // ------------------
 // INTERNAL FUNCTIONS
 // ------------------
+
+// Extract proper body
+function _extractHtmlBody(email_obj, body) {
+	// If we have results from mailparser
+	if (email_obj.html) { return email_obj.html; }
+	if (email_obj.textAsHtml) { return email_obj.textAsHtml; }
+
+	// Get body from children
+	return getBodyTextFromChildren(body);
+
+	// Subfunction
+	function getBodyTextFromChildren(haraka_obj) {
+		// If we have body in the root of the haraka body
+		if (haraka_obj.bodytext) { return haraka_obj.bodytext; }
+		if (! haraka_obj.children) { return ''; }
+
+		var childs_body_text = null;
+		var i = 0;
+		// take the text from the first child that has it
+		while (! childs_body_text && i < haraka_obj.children.length) {
+			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++]);
+		}
+		return childs_body_text || '';
+	}
+};
 
 // Add to delivery log
 function _saveDeliveryResults(data_object, conn, plugin_object, callback) {

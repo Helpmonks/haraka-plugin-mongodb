@@ -1,3 +1,9 @@
+# 1.3.1 - 2019-05-22
+
+- Added a method to extract body from the parsed Haraka body if mailparser fails (Thank you Denise McCort)
+- Explicitly added Iconv to the mailparser options
+- Updated MongoDB library
+
 # 1.3.0 - 2019-05-16
 
 - Changed to mailparser
