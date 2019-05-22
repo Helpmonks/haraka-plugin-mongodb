@@ -16,6 +16,7 @@ var fs = require('fs-extra');
 var path = require('path');
 // var MailParser = require("mailparser-mit").MailParser;
 // var MailParser2 = require("mailparser").MailParser;
+var Iconv = require('iconv').Iconv;
 var simpleParser = require('mailparser').simpleParser
 var exec = require('child_process').exec;
 
@@ -173,6 +174,16 @@ exports.queue_to_mongodb = function(next, connection) {
 			// 	_references = email_object.references.replace(/<|>/gm, '').split('');
 			// }
 
+			var _body_html = email_object.html ? email_object.html : email_object.textAsHtml ? email_object.textAsHtml : null;
+			if ( !_body_html && body && body.bodytext )	_body_html = body.bodytext;
+			if ( !_body_html && body.children && body.children.length ) {
+				if ( body.children[0].is_html ) _body_html = body.children[0].bodytext;
+				if ( !_body_html && body.children[1] && body.children[1].is_html ) _body_html = body.children[1].bodytext;
+				if ( !_body_html ) _body_html = body.children[0].bodytext;
+			}
+
+
+
 			// MP 2.2 code
 			var _email = {
 				'raw': email_object,
@@ -186,8 +197,8 @@ exports.queue_to_mongodb = function(next, connection) {
 				'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
 				'attachments': email_object.attachments || [],
 				'headers': email_object.headers,
-				'html': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitation. Please see the attached file.' : email_object.html ? email_object.html : email_object.textAsHtml ? email_object.textAsHtml : null,
-				'text': email_object.attachments && email_object.attachments.length && email_object.attachments[0].contentType === 'text/calendar' ? 'This is a calendar invitation. Please see the attached file.' : email_object.text ? email_object.text : null,
+				'html': _body_html,
+				'text': email_object.text ? email_object.text : null,
 				'timestamp': new Date(),
 				'status': 'unprocessed',
 				'source': 'haraka',
@@ -481,7 +492,7 @@ function _mp(plugin, connection, cb) {
 	// connection.transaction.message_stream.pipe(mailparser, {});
 
 	// MP 2
-	simpleParser(connection.transaction.message_stream, (error, mail) => {
+	simpleParser(connection.transaction.message_stream, { Iconv }, (error, mail) => {
 		if ( mail.attachments ) {
 			_storeAttachments(connection, plugin, mail.attachments, mail, function(error, mail_object) {
 				return cb(mail_object);
