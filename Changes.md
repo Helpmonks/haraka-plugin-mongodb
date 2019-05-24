@@ -1,3 +1,7 @@
+# 1.3.2 - 2019-05-24
+
+- Messages in Base64 encoding were not read every time. This fix should detect those emails better and read them properly.
+
 # 1.3.1 - 2019-05-22
 
 - Added a method to extract body from the parsed Haraka body if mailparser fails (Thank you Denise McCort)

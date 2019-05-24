@@ -354,27 +354,34 @@ exports.shutdown = function() {
 
 // Extract proper body
 function _extractHtmlBody(email_obj, body) {
-	// If we have results from mailparser
-	if (email_obj.html) { return email_obj.html; }
-	if (email_obj.textAsHtml) { return email_obj.textAsHtml; }
 
-	// Get body from children
-	return getBodyTextFromChildren(body);
+	var use_childs_html = email_obj.html && email_obj.html.includes('������') && email_obj.raw && email_obj.raw.headers && email_obj.raw.headers['content-transfer-encoding'] === 'base64';
 
-	// Subfunction
-	function getBodyTextFromChildren(haraka_obj) {
-		// If we have body in the root of the haraka body
-		if (haraka_obj.bodytext) { return haraka_obj.bodytext; }
+	if (email_obj.html && ! use_childs_html) { return email_obj.html; }
+	if (email_obj.textAsHtml && ! use_childs_html) { return email_obj.textAsHtml; }
+
+	var html = getBodyTextFromChildren(body);
+	var result = html || getBodyTextFromChildren(body, 'text/plain;');
+
+	return result;
+
+	function getBodyTextFromChildren(haraka_obj, type = 'text/html;') {
+
+		var is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
+
+		if (haraka_obj.bodytext && is_requested_type) { return haraka_obj.bodytext; }
 		if (! haraka_obj.children) { return ''; }
 
 		var childs_body_text = null;
 		var i = 0;
 		// take the text from the first child that has it
 		while (! childs_body_text && i < haraka_obj.children.length) {
-			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++]);
+			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type);
 		}
+
 		return childs_body_text || '';
 	}
+
 };
 
 // Add to delivery log
