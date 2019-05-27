@@ -33,6 +33,7 @@
     "mailparser": "^2.7.1",
     "moment": "^2",
     "mongodb": "^3.2.6",
+    "node-gyp": "^4.0.0",
     "uuid": "^3"
   },
   "devDependencies": {

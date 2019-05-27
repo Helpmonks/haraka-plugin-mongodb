@@ -8,12 +8,6 @@ As of version 1.1.5 this plugin also takes care of bounced messages, i.e., were 
 
 # Installation
 
-Please install node-gyp locally first:
-
-```
-npm install -g node-gyp
-```
-
 Depending on your operating system, you might first have to install python, make, and compiler, e.g.:
 
 ```
@@ -63,4 +57,8 @@ If you run into any issue, please report them on the [plugins issue page](https:
 # Developers / Pull requests
 
 Pull-requests are welcomed! Development takes place in the "develop" branch. Hence please create any pull-requests against the "develop" branch.
+
+# Version History
+
+A version history with all changes [is also available](https://github.com/Helpmonks/haraka-plugin-mongodb/blob/master/Changes.md)
 
