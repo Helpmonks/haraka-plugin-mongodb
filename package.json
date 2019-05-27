@@ -32,7 +32,7 @@
     "iconv": "^2.3",
     "mailparser": "^2.7.1",
     "moment": "^2",
-    "mongodb": "^3.2.5",
+    "mongodb": "^3.2.6",
     "uuid": "^3"
   },
   "devDependencies": {
