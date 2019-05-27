@@ -355,7 +355,7 @@ exports.shutdown = function() {
 // Extract proper body
 function _extractHtmlBody(email_obj, body) {
 
-	var use_childs_html = email_obj.html && email_obj.html.includes('������') && email_obj.raw && email_obj.raw.headers && email_obj.raw.headers['content-transfer-encoding'] === 'base64';
+	var use_childs_html = email_obj.html && ! email_obj.html.toLowerCase().includes('html') && email_obj.html.includes('�') && email_obj.raw && email_obj.raw.headers && email_obj.raw.headers['content-transfer-encoding'] === 'base64';
 
 	if (email_obj.html && ! use_childs_html) { return email_obj.html; }
 	if (email_obj.textAsHtml && ! use_childs_html) { return email_obj.textAsHtml; }
@@ -378,11 +378,11 @@ function _extractHtmlBody(email_obj, body) {
 		while (! childs_body_text && i < haraka_obj.children.length) {
 			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type);
 		}
-
 		return childs_body_text || '';
 	}
 
 };
+
 
 // Add to delivery log
 function _saveDeliveryResults(data_object, conn, plugin_object, callback) {

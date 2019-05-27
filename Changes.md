@@ -1,3 +1,8 @@
+# 1.3.3 - 2019-05-27
+
+- Happy Memorial Day
+- Just some further enhancements to messages that could not be extracted properly
+
 # 1.3.2 - 2019-05-24
 
 - Messages in Base64 encoding were not read every time. This fix should detect those emails better and read them properly.
