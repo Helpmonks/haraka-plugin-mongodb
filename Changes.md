@@ -1,3 +1,8 @@
+# 1.3.4 - 2019-05-28
+
+- Attachment file names are now cleaned before saving
+
+
 # 1.3.3 - 2019-05-27
 
 - Happy Memorial Day
