@@ -955,19 +955,18 @@ function _checkInlineImages(plugin, email, callback) {
 	// Get cid settings
 	var _cid = plugin.cfg.attachments.cid || 'cid';
 
-	plugin.loginfo('--------------------------------------');
-	plugin.loginfo('checkInlineImages');
-	plugin.loginfo('email.attachments : ', email.attachments);
-	plugin.loginfo('CID setting : ', _cid);
-	plugin.loginfo('--------------------------------------');
+	// plugin.loginfo('--------------------------------------');
+	// plugin.loginfo('checkInlineImages');
+	// plugin.loginfo('email.attachments : ', email.attachments);
+	// plugin.loginfo('CID setting : ', _cid);
+	// plugin.loginfo('--------------------------------------');
 
 	// if we should leave inline images as cid values
 	if ( _cid === 'cid' ) {
 		// Return
 		return callback(null, email);
 	}
-	plugin.loginfo('SHOULD NOT HIT!!!!');
-	plugin.loginfo('--------------------------------------');
+
 	// Loop over attachments
 	email.attachments.forEach(function(attachment) {
 		// Set attachment path
