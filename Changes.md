@@ -1,6 +1,6 @@
 # 1.4.0 - 2019-06-06
 
-- Re-factored how emails are being parsed
+- Re-factored how emails are being parsed (Thanks to Denise McCort)
 - Defaulting to the body that Haraka passes instead of replying on the mailparser result only. More or less removed our dependency on mailparser
 - There is now a new option how to handle inline images (see readme)
 - Attachment file names are now cleaned before saving, too

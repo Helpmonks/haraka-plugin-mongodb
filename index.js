@@ -20,37 +20,9 @@ const Iconv = require('iconv').Iconv;
 const simpleParser = require('mailparser').simpleParser
 const exec = require('child_process').exec;
 
-/// init linkify ///
+const EmailBodyUtility = require('./email_body_utility');
 
-linkify.tlds(require('tlds'))
-	.tlds('onion', true) // Add unofficial `.onion` domain
-	.add('ftp:', null) // Disable `ftp:` ptotocol
-	.add('git:', 'http:') // Add `git:` ptotocol as "alias"
-	.set({ fuzzyIP: true, fuzzyLink: true, fuzzyEmail: true });
-
-// convert twitter handles
-linkify.add('@', {
-	validate: function (text, pos, self) {
-		var tail = text.slice(pos);
-
-		if (!self.re.twitter) {
-			self.re.twitter =  new RegExp('^([a-zA-Z0-9_]){1,15}(?!_)(?=$|' + self.re.src_ZPCc + ')');
-		}
-
-		if (self.re.twitter.test(tail)) {
-			// Linkifier allows punctuation chars before prefix,
-			// but we additionally disable `@` ("@@mention" is invalid)
-			if (pos >= 2 && tail[pos - 2] === '@') { return false; }
-			return tail.match(self.re.twitter)[0].length;
-		}
-
-		return 0;
-	},
-	normalize: function (match) {
-		match.url = 'https://twitter.com/' + match.url.replace(/^@/, '');
-	}
-});
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 exports.register = function () {
 	var plugin = this;
@@ -153,12 +125,17 @@ exports.queue_to_mongodb = function(next, connection) {
 		},
 		function (email, waterfall_callback) {
 			// Get proper body
-			return waterfall_callback(null, _getHtmlAndTextBody(email, body), email);
+			var html_and_text_body_info = EmailBodyUtility.getHtmlAndTextBody(email, body);
+
+			if (! html_and_text_body_info) { return waterfall_callback(`unable to extract any email body data from email id:'${email._id}'`); }
+
+			return waterfall_callback(null, html_and_text_body_info, email);
 		},
 		function (body_info, email, waterfall_callback) {
+			plugin.lognotice(' body_info !!! ', body_info.meta);
 			// Put values into object
-			email.extracted_html_from = body_info.html_source;
-			email.extracted_text_from = body_info.text_source;
+			email.extracted_html_from = body_info.meta.html_source;
+			email.extracted_text_from = body_info.meta.text_source;
 			// Add html into email
 			email.html = body_info.html;
 			email.text = body_info.text;
@@ -170,6 +147,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		}
 	],
 	function (error, email_object) {
+		if (error) { return waterfall_callback(error); }
 
 		// Mail object
 		var _email = {
@@ -224,70 +202,6 @@ exports.queue_to_mongodb = function(next, connection) {
 		});
 
 	});
-
-	// _mp(plugin, connection, function(email_object) {
-
-	// 	// plugin.lognotice('--------------------------------------');
-	// 	// plugin.lognotice(' email_object.html ', email_object.html);
-	// 	// plugin.lognotice(' email_object.text ', email_object.text);
-	// 	// plugin.lognotice('--------------------------------------');
-
-	// 	// Get proper body
-	// 	var _body_html = _extractHtmlBody(email_object, body);
-
-	// 	// Mail object
-	// 	var _email = {
-	// 		'haraka_body': body ? body : null,
-	// 		'raw': email_object,
-	// 		'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
-	// 		'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,
-	// 		'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
-	// 		'bcc': email_object.headers.get('bcc') ? email_object.headers.get('bcc').value : null,
-	// 		'subject': email_object.subject,
-	// 		'date': email_object.date,
-	// 		'received_date': email_object.headers.get('date') ? email_object.headers.get('date') : null,
-	// 		'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
-	// 		'attachments': email_object.attachments || [],
-	// 		'headers': email_object.headers,
-	// 		'html': _body_html.result,
-	// 		'text': email_object.text ? email_object.text : null,
-	// 		'timestamp': new Date(),
-	// 		'status': 'unprocessed',
-	// 		'source': 'haraka',
-	// 		'in_reply_to' : email_object.inReplyTo,
-	// 		'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
-	// 		'references' : email_object.references,
-	// 		'pickup_date' : new Date(),
-	// 		'mail_from' : connection.transaction.mail_from,
-	// 		'rcpt_to' : connection.transaction.rcpt_to,
-	// 		'size' : connection.transaction.data_bytes,
-	// 		'transferred' : false,
-	// 		'processed' : false,
-	// 		'extracted_from': _body_html.source
-	// 	};
-
-	// 	// plugin.lognotice('--------------------------------------');
-	// 	// plugin.lognotice(' Server notes !!! ');
-	// 	// plugin.lognotice(' server.notes : ', server.notes);
-	// 	// plugin.lognotice(' server.notes.mongodb : ', server.notes.mongodb);
-	// 	// plugin.lognotice('--------------------------------------');
-
-	// 	server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
-	// 		if (err) {
-	// 			plugin.logerror('--------------------------------------');
-	// 			plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err);
-	// 			plugin.logerror('--------------------------------------');
-	// 			next(DENY, "storage error");
-	// 		} else {
-	// 			plugin.lognotice('--------------------------------------');
-	// 			plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
-	// 			plugin.lognotice('--------------------------------------');
-	// 			next(OK);
-	// 		}
-	// 	});
-
-	// });
-
 };
 
 
@@ -465,227 +379,144 @@ exports.shutdown = function() {
 // INTERNAL FUNCTIONS
 // ------------------
 
-// Extract proper body
-// function _extractHtmlBody(email_obj, body) {
 
-// 	var use_childs_html = email_obj.html && ! email_obj.html.toLowerCase().includes('html') && email_obj.html.includes('�') && email_obj.raw && email_obj.raw.headers && email_obj.raw.headers['content-transfer-encoding'] === 'base64';
+// function _getHtmlAndTextBody(email_obj, body) {
 
-// 	if (email_obj.html && ! use_childs_html) { return email_obj.html; }
-// 	if (email_obj.textAsHtml && ! use_childs_html) { return email_obj.textAsHtml; }
+// 	var html_info = _extractBody(email_obj, body)
+// 	var text_info = _extractBody(email_obj, body, _default_text_field_order);
 
-// 	var html = getBodyTextFromChildren(body);
-// 	var result = html || getBodyTextFromChildren(body, 'text/plain;');
-
-// 	return result;
-
-// 	function getBodyTextFromChildren(haraka_obj, type = 'text/html;') {
-
-// 		var is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
-
-// 		if (haraka_obj.bodytext && is_requested_type) { return haraka_obj.bodytext; }
-// 		if (! haraka_obj.children) { return ''; }
-
-// 		var childs_body_text = null;
-// 		var i = 0;
-// 		// take the text from the first child that has it
-// 		while (! childs_body_text && i < haraka_obj.children.length) {
-// 			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type);
-// 		}
-// 		return childs_body_text || '';
+// 	// override any html mailparser result we have if there's text result
+// 	if (! html_info.result || (text_info.result && html_info.source.includes('mailparser'))) {
+// 		html_info.result = _convertPlainTextToHtml(text_info.result);
+// 		html_info.source = text_info.source;
 // 	}
 
-// };
+// 	return {
+// 		'html' : html_info.result,
+// 		'text' : text_info.result,
+// 		'html_source' : html_info.source,
+// 		'text_source' :text_info.source
+// 	};
+// }
 
-// function _extractHtmlBody(email_obj, body) {
+// const _default_html_field_order = 'bodytext_html mailparser_html mailparser_text_as_html'.split(' ');
+// const _default_text_field_order = 'bodytext_plain mailparser_text'.split(' ');
+
+// function _extractBody(email_obj, body, field_order = _default_html_field_order) {
 
 // 	// source can be bodytext_html, bodytext_plain, mailparser_html, mailparser_text_as_html, mail_parser_text
-// 	var source = null;
-// 	var result = null;
+// 	var source = 'none';
+// 	var result = '';
 
-// 	if (! result) {
-// 		result = email_obj.html && email_obj.html !== '' && !email_obj.html.includes('�') ? email_obj.html : null;
-// 		source = !! result ? 'mailparser_html' : null;
+// 	var i = 0;
+// 	while (! result && i < field_order.length) {
+// 		var field = field_order[i++];
+// 		result = getBodyByField(email_obj, body, field);
+// 		// if we have a result then set the source
+// 		source = result ? field : source;
 // 	}
-
-// 	if (! result) {
-// 		result = getBodyTextFromChildren(body);
-// 		source = !! result ? 'bodytext_html' : null;
-// 	};
-
-// 	if (! result) {
-// 		result = getBodyTextFromChildren(body, 'text/plain;');
-// 		source = !! result ? 'bodytext_plain' : null;
-// 	};
-
-// 	if (! result) {
-// 		result = email_obj.text && email_obj.text !== '' && !email_obj.text.includes('�') ? email_obj.text : null;
-// 		source = !! result ? 'mailparser_text' : null;
-// 	};
-
-// 	if (! result) {
-// 		result = email_obj.textAsHtml && email_obj.textAsHtml !== '' && !email_obj.textAsHtml.includes('�') ? email_obj.textAsHtml : null;
-// 		source = !! result ? 'mailparser_text_as_html' : null;
-// 	};
 
 // 	return { result, source };
 
+// 	///////////////////////////////////////////////
 
-// 	function getBodyTextFromChildren(haraka_obj, type = 'text/html;') {
+// 	function getBodyTextFromChildren(haraka_obj, type = 'text/html', depth = 0, index = 0) {
 
-// 		var is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
+// 		const _log_func = false;
 
-// 		if (haraka_obj.bodytext && haraka_obj.bodytext !== '' && !haraka_obj.bodytext.includes('�') && is_requested_type) { return haraka_obj.bodytext; }
-// 		// if (haraka_obj.bodytext && haraka_obj.bodytext !== '' && !haraka_obj.bodytext.includes('�')) { return haraka_obj.bodytext; }
-// 		if (! haraka_obj.children) { return ''; }
+// 		_log_func && console.log(`${'\t'.repeat(depth)} [${index}] looking for type '${type}', current node is '${haraka_obj.ct}' at depth '${depth}'`);
+// 		const is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
+
+// 		if (haraka_obj.bodytext && is_requested_type) {
+// 			_log_func && console.log(`${'\t'.repeat(depth)} [${index}] found bodytype of length '${haraka_obj.bodytext.length}' for type '${type}'`);
+// 			return haraka_obj.bodytext;
+// 		}
+
+// 		if (! haraka_obj.children || ! haraka_obj.children.length) {
+// 			_log_func && console.log(`${'\t'.repeat(depth)} [${index}] no children at current node of depth '${depth}', sending back an empty string`);
+// 			return '';
+// 		}
+
+// 		const num_children = haraka_obj.children.length;
+
+// 		_log_func && console.log(`${'\t'.repeat(depth)} [${index}] node has ${num_children} children to be checked until a result of type '${type}' is found`);
 
 // 		var childs_body_text = null;
 // 		var i = 0;
 // 		// take the text from the first child that has it
-// 		while (! childs_body_text && i < haraka_obj.children.length) {
-// 			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type);
+// 		while (! childs_body_text && i < num_children) {
+// 			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
 // 		}
 
-// 		return childs_body_text || '';
+// 		return childs_body_text.trim() || '';
 // 	}
-// };
 
-function _getHtmlAndTextBody(email_obj, body) {
+// 	function getBodyByField(email_obj, body, field) {
 
-	var html_info = _extractBody(email_obj, body)
-	var text_info = _extractBody(email_obj, body, _default_text_field_order);
+// 		switch (field) {
 
-	// override any html mailparser result we have if there's text result
-	if (! html_info.result || (text_info.result && html_info.source.includes('mailparser'))) {
-		html_info.result = _convertPlainTextToHtml(text_info.result);
-		html_info.source = text_info.source;
-	}
+// 			case 'bodytext_html':
+// 				return getBodyTextFromChildren(body);
 
-	return {
-		'html' : html_info.result,
-		'text' : text_info.result,
-		'html_source' : html_info.source,
-		'text_source' :text_info.source
-	};
-}
+// 			case 'bodytext_plain':
+// 				return getBodyTextFromChildren(body, 'text/plain');
 
-const _default_html_field_order = 'bodytext_html mailparser_html mailparser_text_as_html'.split(' ');
-const _default_text_field_order = 'bodytext_plain mailparser_text'.split(' ');
+// 			case 'mailparser_html':
+// 				return email_obj.html || '';
 
-function _extractBody(email_obj, body, field_order = _default_html_field_order) {
+// 			case 'mailparser_text_as_html':
+// 				return email_obj.textAsHtml || '';
 
-	// source can be bodytext_html, bodytext_plain, mailparser_html, mailparser_text_as_html, mail_parser_text
-	var source = 'none';
-	var result = '';
+// 			case 'mailparser_text' :
+// 				return email_obj.text || '';
 
-	var i = 0;
-	while (! result && i < field_order.length) {
-		var field = field_order[i++];
-		result = getBodyByField(email_obj, body, field);
-		// if we have a result then set the source
-		source = result ? field : source;
-	}
+// 			default:
+// 				console.log(`unknown field type requested for body field: '${field}'`);
+// 				return '';
+// 		}
+// 	}
+// }
 
-	return { result, source };
+// function _convertPlainTextToHtml(text) {
 
-	///////////////////////////////////////////////
+// 	if (! text) { return text; }
 
-	function getBodyTextFromChildren(haraka_obj, type = 'text/html', depth = 0, index = 0) {
+// 	// use linkify to convert any links to <a>
+// 	var words = text.split(' ');
 
-		const _log_func = false;
+// 	words = words.map((w) => {
+// 		// if there're no links return w as is
+// 		if (! linkify.test(w)) { return w; }
 
-		_log_func && console.log(`${'\t'.repeat(depth)} [${index}] looking for type '${type}', current node is '${haraka_obj.ct}' at depth '${depth}'`);
-		const is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
+// 		var matches = linkify.match(w);
 
-		if (haraka_obj.bodytext && is_requested_type) {
-			_log_func && console.log(`${'\t'.repeat(depth)} [${index}] found bodytype of length '${haraka_obj.bodytext.length}' for type '${type}'`);
-			return haraka_obj.bodytext;
-		}
+// 		// loop through the matches backwards so that the matches' indexes remain unchanged throughout the changes
+// 		for (var i = matches.length -1; i >= 0; i--) {
+// 			var m = matches[i];
+// 			w = `${w.substring(0, m.index)}<a href="${m.url}" target="_blank">${m.text}</a>${w.substring(m.lastIndex)}`;
+// 		}
 
-		if (! haraka_obj.children || ! haraka_obj.children.length) {
-			_log_func && console.log(`${'\t'.repeat(depth)} [${index}] no children at current node of depth '${depth}', sending back an empty string`);
-			return '';
-		}
+// 		return w.trim();
+// 	});
 
-		const num_children = haraka_obj.children.length;
+// 	var text_as_html = `<p>${words.join(' ')}</p>`;
 
-		_log_func && console.log(`${'\t'.repeat(depth)} [${index}] node has ${num_children} children to be checked until a result of type '${type}' is found`);
+// 	text_as_html = text_as_html.replace(/\r?\n/g, '\n');
+// 	text_as_html = text_as_html.replace(/[ \t]+$/gm, '');
+// 	text_as_html = text_as_html.replace(/\n\n+/gm, '</p><p>');
+// 	text_as_html = text_as_html.replace(/\n/g, '<br/>').trim();
 
-		var childs_body_text = null;
-		var i = 0;
-		// take the text from the first child that has it
-		while (! childs_body_text && i < num_children) {
-			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
-		}
+// 	// remove any starting and trailing empty paragraphs
+// 	while (! text_as_html.indexOf('<p></p>')) {
+// 		text_as_html = text_as_html.substring('<p></p>'.length).trim();
+// 	}
 
-		return childs_body_text.trim() || '';
-	}
+// 	while (text_as_html.substring(text_as_html.length - '<p></p>'.length) === '<p></p>') {
+// 		text_as_html = text_as_html.substring(0, text_as_html.length - '<p></p>'.length).trim();
+// 	}
 
-	function getBodyByField(email_obj, body, field) {
-
-		switch (field) {
-
-			case 'bodytext_html':
-				return getBodyTextFromChildren(body);
-
-			case 'bodytext_plain':
-				return getBodyTextFromChildren(body, 'text/plain');
-
-			case 'mailparser_html':
-				return email_obj.html || '';
-
-			case 'mailparser_text_as_html':
-				return email_obj.textAsHtml || '';
-
-			case 'mailparser_text' :
-				return email_obj.text || '';
-
-			default:
-				console.log(`unknown field type requested for body field: '${field}'`);
-				return '';
-		}
-	}
-}
-
-function _convertPlainTextToHtml(text) {
-
-	if (! text) { return text; }
-
-	// use linkify to convert any links to <a>
-	var words = text.split(' ');
-
-	words = words.map((w) => {
-		// if there're no links return w as is
-		if (! linkify.test(w)) { return w; }
-
-		var matches = linkify.match(w);
-
-		// loop through the matches backwards so that the matches' indexes remain unchanged throughout the changes
-		for (var i = matches.length -1; i >= 0; i--) {
-			var m = matches[i];
-			w = `${w.substring(0, m.index)}<a href="${m.url}" target="_blank">${m.text}</a>${w.substring(m.lastIndex)}`;
-		}
-
-		return w.trim();
-	});
-
-	var text_as_html = `<p>${words.join(' ')}</p>`;
-
-	text_as_html = text_as_html.replace(/\r?\n/g, '\n');
-	text_as_html = text_as_html.replace(/[ \t]+$/gm, '');
-	text_as_html = text_as_html.replace(/\n\n+/gm, '</p><p>');
-	text_as_html = text_as_html.replace(/\n/g, '<br/>').trim();
-
-	// remove any starting and trailing empty paragraphs
-	while (! text_as_html.indexOf('<p></p>')) {
-		text_as_html = text_as_html.substring('<p></p>'.length).trim();
-	}
-
-	while (text_as_html.substring(text_as_html.length - '<p></p>'.length) === '<p></p>') {
-		text_as_html = text_as_html.substring(0, text_as_html.length - '<p></p>'.length).trim();
-	}
-
-	return text_as_html;
-}
+// 	return text_as_html;
+// }
 
 
 // Add to delivery log
