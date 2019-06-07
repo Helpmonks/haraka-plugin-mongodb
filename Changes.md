@@ -1,7 +1,12 @@
-# 1.3.4 - 2019-05-28
+# 1.4.0 - 2019-06-06
 
-- Attachment file names are now cleaned before saving
-
+- Re-factored how emails are being parsed
+- Defaulting to the body that Haraka passes instead of replying on the mailparser result only. More or less removed our dependency on mailparser
+- There is now a new option how to handle inline images (see readme)
+- Attachment file names are now cleaned before saving, too
+- Creating links for plain text emails
+- Added, updated and/or removed dependencies
+- Important: Iconv is now required!
 
 # 1.3.3 - 2019-05-27
 

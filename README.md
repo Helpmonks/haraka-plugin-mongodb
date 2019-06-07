@@ -44,7 +44,14 @@ The collection to use for the queue (incoming) and delivery results (outgoing).
 
 ## Section: Attachments
 
+### Attachment path
 Provide the absolute path to store attachments.
+
+### Convert inline images (new as of 1.4.0)
+You can set if you want to convert inline images or not. Following options are available:
+- cid = leave value as cid:(number) - this is useful if you want to process the images later on
+- base64 = convert inline images to base64 - will convert inline images to base64 and remove it from the attachment array
+- path = convert the cid:(number) value to the path given, the filename will be appended to your path, e.g., "(path)/image.png". Do NOT append a "/" at the end of your path!
 
 ## Section: Enable
 
