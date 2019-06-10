@@ -1,3 +1,9 @@
+# 1.4.1 - 2019-06-10
+
+- Improved the parsing of emails even further as there were still 1% of emails that weren't parsed properly
+- Removed logging statements which caused a crash (sorry)
+- Added new library
+
 # 1.4.0 - 2019-06-06
 
 - Re-factored how emails are being parsed (Thanks to Denise McCort)
