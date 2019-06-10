@@ -35,6 +35,7 @@
     "iconv": "2.3.3",
     "linkify-it": "^2.1.0",
     "mailparser": "2.7.1",
+    "mailsplit": "^4.4.1",
     "moment": "^2",
     "mongodb": "^3.2.7",
     "node-gyp": "^4.0.0",

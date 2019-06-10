@@ -1,6 +1,12 @@
 const EmailBodyUtility = function() {
+	// const fs = require('fs');
+	const stream = require('stream');
+
+	const async = require('async');
 	const linkify = require('linkify-it')();
 	const decode = require('decode-html');
+
+	const Splitter = require('mailsplit').Splitter;
 
 	const _default_html_field_order = 'bodytext_html mailparser_html mailparser_text_as_html'.split(' ');
 	const _default_text_field_order = 'bodytext_plain mailparser_text'.split(' ');
@@ -9,46 +15,80 @@ const EmailBodyUtility = function() {
 
 	////////////////// Exposed Functions ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	const _getHtmlAndTextBody = function(email_obj, body) {
+	const _getHtmlAndTextBody = function(email_obj, body, callback) {
 
-		_log_module && console.log(`_getHtmlAndTextBody(), extracting html...`);
-		var html_info = _extractBody(email_obj, body);
+		async.waterfall([
+			/* get basic html and text bodies */
+			function (waterfall_callback) {
 
-		_log_module && console.log(`\n_getHtmlAndTextBody(), extracting text...`);
-		var text_info = _extractBody(email_obj, body, _default_text_field_order);
+				var has_rfc_822_message = getDistinctFieldValues(body, 'ct').includes('message/rfc822');
 
-		var has_rfc_822_message = getDistinctFieldValues(body, 'ct').includes('message/rfc822');
+				// continue to use mailparser result if rfc_822 message is present
+				var html_field_order = has_rfc_822_message ? 'mailparser_html mailparser_text_as_html'.split(' ') : _default_html_field_order;
+				var text_field_order = has_rfc_822_message ? 'mailparser_text bodytext_plain'.split(' ') : _default_text_field_order;
 
-		if (has_rfc_822_message) {
-			var inner_message_info = _getRfc822HtmlAndTextBody(body);
+				_log_module && console.log(`_getHtmlAndTextBody(), extracting html...`);
+				var html_info = _extractBody(email_obj, body, html_field_order);
 
-			// TO DO : extract the embedded message to append to our bodies
-		}
+				_log_module && console.log(`\n_getHtmlAndTextBody(), extracting text...`);
+				var text_info = _extractBody(email_obj, body, text_field_order);
 
-		var use_text_for_html = ! html_info.result // if we have no html result
-			|| (text_info.result && html_info.source.includes('mailparser')) // if we have a text result, and the html result was from mailparser
-			|| (! html_info.has_valid_encoding && text_info.has_valid_encoding); // or we could not properly decode the content for the html but we could for the text
+				return waterfall_callback(null, html_info, text_info);
+			},
+			/* extract and append rfc822 info if present
+				-- USING MAILPARSER RESULTS FOR RFC822 containing messages until _getRfc822HtmlAndTextBody() is complete -- 
+			*/
+			function (html_info, text_info, waterfall_callback) {
 
-		// override any html mailparser result we have if there's text result
-		if (use_text_for_html) {
-			_log_module && console.log(`\n_getHtmlAndTextBody(), have no html or an invalid html result, converting text result to html`);
+				var has_rfc_822_message = getDistinctFieldValues(body, 'ct').includes('message/rfc822');
 
-			// copy over the html result, using the text as the body
-			html_info.result = _convertPlainTextToHtml(text_info.result);
-			html_info.source = text_info.source;
-		}
+				if (! has_rfc_822_message) { return waterfall_callback(null, html_info, text_info); }
 
-		return {
-			'html' : html_info.result,
-			'text' : text_info.result,
-			'meta' : {
-				'is_html_from_text' : use_text_for_html,
-				'html_source' : html_info.source,
-				'html_has_valid_encoding' : html_info.has_valid_encoding,
-				'text_source' : text_info.source,
-				'text_has_valid_encoding' : text_info.has_valid_encoding
+				_getRfc822HtmlAndTextBody(body, function (error, rfc_822_bodies) {
+					if (error) { return waterfall_callback(error); }
+
+					html_info.result += rfc_822_bodies.html;
+					text_info.result += rfc_822_bodies.text;
+
+					return waterfall_callback(null, html_info, text_info);
+				});
+			},
+			/* analyse results and overwrite html if text is better parsed */
+			function (html_info, text_info, waterfall_callback) {
+
+				var use_text_for_html = ! html_info.result // if we have no html result
+					|| (text_info.result && html_info.source.includes('mailparser')) // if we have a text result, and the html result was from mailparser
+					|| (! html_info.has_valid_encoding && text_info.has_valid_encoding); // or we could not properly decode the content for the html but we could for the text
+
+				// override any html mailparser result we have if there's text result
+				if (use_text_for_html) {
+					_log_module && console.log(`\n_getHtmlAndTextBody(), have no html or an invalid html result, converting text result to html`);
+
+					// copy over the html result, using the text as the body
+					html_info.result = _convertPlainTextToHtml(text_info.result);
+					html_info.source = text_info.source;
+				}
+
+				return waterfall_callback(null, html_info, text_info, use_text_for_html);
 			}
-		};
+		],
+		function (error, html_info, text_info, use_text_for_html) {
+			if (error) { return callback && callback(error); }
+
+			var extracted_bodies = {
+				'html' : html_info.result,
+				'text' : text_info.result,
+				'meta' : {
+					'is_html_from_text' : use_text_for_html,
+					'html_source' : html_info.source,
+					'html_has_valid_encoding' : html_info.has_valid_encoding,
+					'text_source' : text_info.source,
+					'text_has_valid_encoding' : text_info.has_valid_encoding,
+				}
+			};
+
+			return callback && callback(null, extracted_bodies);
+		});
 	};
 
 	const _convertPlainTextToHtml = function(text) {
@@ -148,7 +188,6 @@ const EmailBodyUtility = function() {
 			if (is_requested_type && (haraka_obj.bodytext || haraka_obj.body_text_encoded)) {
 				_log_module && console.log(`${'\t'.repeat(depth)} [${index}] found bodytype of length '${haraka_obj.bodytext.length || haraka_obj.body_text_encoded.length}' for type '${type}'`);
 
-			
 				// if the encoding is valid and we have a value, then use the bodytext
 				if (haraka_obj.body_encoding && ! haraka_obj.body_encoding.includes('broken') && haraka_obj.bodytext) {
 					has_valid_encoding = true;
@@ -199,20 +238,66 @@ const EmailBodyUtility = function() {
 		return Array.from(new Set(values));
 	};
 
-	const _getRfc822HtmlAndTextBody = function(body) {
+	// UNDER CONSTRUCTION ////////////////////////////////////////////////////////////////////////////////
 
-		var rfc_body_info = {
-			'html' : '',
-			'text' : ''
-		};
+	const _getRfc822HtmlAndTextBody = function(body, callback) {
 
-		var rfc_822_body = getNodeWithMessageType(body, 'message/rfc822');
+		var rfc_body_info = { 'html' : '', 'text' : '' };
 
+		var rfc_822_node = getFirstNodeOfType(body, 'message/rfc822');
 
-		return rfc_body_info;
+		let splitter = new Splitter();
+		
+		// handle parsed data
+		splitter.on('data', data => {
+			switch (data.type) {
+				case 'node':
+					var headers = data.getHeaders().toString('utf8').split(' ');
+
+					var content_type_index = headers.indexOf('Content-Type:');
+
+					// if we have a content_type, then the next index is the value
+					var content_type = content_type_index > -1 ? headers[content_type_index+1] : null;
+
+					// if we've encountered either content type, set it to collect the result
+					collect_html = content_type === 'text/html;'
+					collect_text = content_type === 'text/plain;'
+
+					break;
+
+				case 'data':
+					// multipart message structure
+					// this is not related to any specific 'node' block as it includes
+					// everything between the end of some node body and between the next header
+					// collect_html && log.info(data.value.toString('utf8'));
+					break;
+
+				case 'body':
+
+					if (collect_html) { rfc_body_info.html += data.value.toString('utf8'); }
+					if (collect_text) { rfc_body_info.text += data.value.toString('utf8'); }
+					// Leaf element body. Includes the body for the last 'node' block. You might
+					// have several 'body' calls for a single 'node' block
+					break;
+			}
+		});
+
+		// callback when splitter's finish event is reached
+		splitter.on('finish', function () {
+			return callback && callback(null, rfc_body_info);
+		});
+
+		// send data to the parser
+		const bodytext_stream = new stream.Readable();
+
+		bodytext_stream._read = () => {};
+		bodytext_stream.push(rfc_822_node.bodytext);
+		bodytext_stream.push(null);
+		bodytext_stream.pipe(splitter);
+
 	};
 
-	function getNodeWithMessageType(haraka_obj, type = 'text/html', depth = 0, index = 0) {
+	function getFirstNodeOfType(haraka_obj, type = 'text/html', depth = 0, index = 0) {
 		
 		if (haraka_obj.ct && haraka_obj.ct.includes(type)) { return haraka_obj; }
 
@@ -222,7 +307,7 @@ const EmailBodyUtility = function() {
 		var i = 0;
 		// take first node that matches the requested message-type
 		while (! matching_child_node && i < num_children) {
-			matching_child_node = getNodeWithMessageType(haraka_obj.children[i++], type, depth+1, ++index);
+			matching_child_node = getFirstNodeOfType(haraka_obj.children[i++], type, depth+1, ++index);
 		}
 
 		return matching_child_node || null;
@@ -262,7 +347,7 @@ const EmailBodyUtility = function() {
 
 	// exposed members
 	return {
-		getHtmlAndTextBody : _getHtmlAndTextBody, // (email_obj, body)
+		getHtmlAndTextBody : _getHtmlAndTextBody, // (email_obj, body, callback)
 		convertPlainTextToHtml : _convertPlainTextToHtml // (text)
 	};
 }();

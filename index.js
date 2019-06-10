@@ -125,11 +125,11 @@ exports.queue_to_mongodb = function(next, connection) {
 		},
 		function (email, waterfall_callback) {
 			// Get proper body
-			var html_and_text_body_info = EmailBodyUtility.getHtmlAndTextBody(email, body);
+			EmailBodyUtility.getHtmlAndTextBody(email, body, function (error, html_and_text_body_info) {
+				if (error || ! html_and_text_body_info) { return callback && callback(error || `unable to extract any email body data from email id:'${email._id}'`); }
 
-			if (! html_and_text_body_info) { return waterfall_callback(`unable to extract any email body data from email id:'${email._id}'`); }
-
-			return waterfall_callback(null, html_and_text_body_info, email);
+				return waterfall_callback(null, html_and_text_body_info, email);
+			});
 		},
 		function (body_info, email, waterfall_callback) {
 			plugin.lognotice(' body_info !!! ', body_info.meta);
