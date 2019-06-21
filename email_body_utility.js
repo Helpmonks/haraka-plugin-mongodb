@@ -1,5 +1,4 @@
 const EmailBodyUtility = function() {
-	// const fs = require('fs');
 	const stream = require('stream');
 
 	const async = require('async');
@@ -36,7 +35,7 @@ const EmailBodyUtility = function() {
 				return waterfall_callback(null, html_info, text_info);
 			},
 			/* extract and append rfc822 info if present
-				-- USING MAILPARSER RESULTS FOR RFC822 containing messages until _getRfc822HtmlAndTextBody() is complete -- 
+				-- USING MAILPARSER RESULTS FOR RFC822 containing messages until _getRfc822HtmlAndTextBody() is complete --
 			*/
 			function (html_info, text_info, waterfall_callback) {
 
@@ -139,7 +138,7 @@ const EmailBodyUtility = function() {
 
 		// source can be bodytext_html, bodytext_plain, mailparser_html, mailparser_text_as_html, mail_parser_text
 		var source = 'none';
-		var result = '';          
+		var result = '';
 		var has_valid_encoding = false;
 
 		var i = 0;
@@ -155,7 +154,7 @@ const EmailBodyUtility = function() {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		function getBodyByField(email_obj, body, field) {
-			
+
 			switch (field) {
 
 				case 'bodytext_html':
@@ -182,8 +181,8 @@ const EmailBodyUtility = function() {
 		function getBodyOfTypeFromChildren(haraka_obj, type = 'text/html', depth = 0, index = 0) {
 
 			_log_module && console.log(`${'\t'.repeat(depth)} [${index}] current node is '${haraka_obj.ct}' - looking for type '${type}' at depth '${depth}'`);
-			
-			const is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
+
+			const is_requested_type = haraka_obj.ct && haraka_obj.ct.toLowerCase().includes(type);
 
 			if (is_requested_type && (haraka_obj.bodytext || haraka_obj.body_text_encoded)) {
 				_log_module && console.log(`${'\t'.repeat(depth)} [${index}] found bodytype of length '${haraka_obj.bodytext.length || haraka_obj.body_text_encoded.length}' for type '${type}'`);
@@ -193,7 +192,7 @@ const EmailBodyUtility = function() {
 					has_valid_encoding = true;
 					return haraka_obj.bodytext;
 				}
-				
+
 				// if we're looking for html, then decode the values before sending it back
 				return type === 'text/html' ? decode(haraka_obj.body_text_encoded) : haraka_obj.body_text_encoded;
 			}
@@ -247,7 +246,7 @@ const EmailBodyUtility = function() {
 		var rfc_822_node = getFirstNodeOfType(body, 'message/rfc822');
 
 		let splitter = new Splitter();
-		
+
 		// handle parsed data
 		splitter.on('data', data => {
 			switch (data.type) {
@@ -298,7 +297,7 @@ const EmailBodyUtility = function() {
 	};
 
 	function getFirstNodeOfType(haraka_obj, type = 'text/html', depth = 0, index = 0) {
-		
+
 		if (haraka_obj.ct && haraka_obj.ct.includes(type)) { return haraka_obj; }
 
 		const num_children = haraka_obj.children.length;
@@ -325,7 +324,7 @@ const EmailBodyUtility = function() {
 	linkify.add('@', {
 		validate: function (text, pos, self) {
 			var tail = text.slice(pos);
-	 
+
 			if (!self.re.twitter) {
 				self.re.twitter =  new RegExp('^([a-zA-Z0-9_]){1,15}(?!_)(?=$|' + self.re.src_ZPCc + ')');
 			}
