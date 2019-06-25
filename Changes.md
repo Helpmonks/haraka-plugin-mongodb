@@ -1,3 +1,7 @@
+# 1.4.2 - 2019-06-25
+
+- Small improvement to the parser
+
 # 1.4.1 - 2019-06-10
 
 - Improved the parsing of emails even further as there were still 1% of emails that weren't parsed properly
