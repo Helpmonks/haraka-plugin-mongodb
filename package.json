@@ -29,11 +29,12 @@
   },
   "homepage": "https://github.com/haraka/haraka-plugin-mongodb#readme",
   "dependencies": {
-    "async": "^2",
+    "async": "^2.6.3",
     "decode-html": "^2",
-    "fs-extra": "^8",
+    "detect-character-encoding": "^0.8.0",
+    "fs-extra": "^8.1.0",
     "iconv": "2.3.3",
-    "linkify-it": "^2.1.0",
+    "linkify-it": "^2.2.0",
     "mailparser": "2.7.1",
     "mailsplit": "^4.4.1",
     "moment": "^2",
@@ -44,8 +45,8 @@
     "uuid": "^3"
   },
   "devDependencies": {
-    "eslint": ">=3",
-    "eslint-plugin-haraka": "*",
+    "eslint": "^6.0.1",
+    "eslint-plugin-haraka": "^1.0.11",
     "haraka-test-fixtures": "*",
     "mocha": "*"
   }
