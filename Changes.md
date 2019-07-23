@@ -1,3 +1,9 @@
+# 1.4.3 - 2019-07-23
+
+- Further improvements to the parser
+- Allow attachments with "_" in the filename
+- Updated libraries
+
 # 1.4.2 - 2019-06-25
 
 - Small improvement to the parser

@@ -45,9 +45,9 @@
     "uuid": "^3"
   },
   "devDependencies": {
-    "eslint": "^6.0.1",
+    "eslint": "^6.1.0",
     "eslint-plugin-haraka": "^1.0.11",
     "haraka-test-fixtures": "*",
-    "mocha": "*"
+    "mocha": "^6.2.0"
   }
 }
