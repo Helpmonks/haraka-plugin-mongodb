@@ -659,8 +659,8 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		}
 
 		// Clean up filename that could potentially cause an issue
-		attachment.fileName = attachment.fileName.replace(/[^A-Za-z0-9\-\.]/g, '');
-		attachment.generatedFileName = attachment.generatedFileName.replace(/[^A-Za-z0-9\-\.]/g, '');
+		attachment.fileName = attachment.fileName.replace(/[^A-Za-z0-9\-\_\.]/g, '');
+		attachment.generatedFileName = attachment.generatedFileName.replace(/[^A-Za-z0-9\-\_\.]/g, '');
 
 		// if generatedFileName is longer than 200
 		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
