@@ -117,9 +117,14 @@ exports.queue_to_mongodb = function(next, connection) {
 	var plugin = this;
 	var body = connection.transaction.body;
 
+	var _body_html;
+	var _body_text;
+
 	async.waterfall([
 		function (waterfall_callback) {
 			_mp(plugin, connection, function(email) {
+				_body_html = email.html || null;
+				_body_text = email.text || null;
 				return waterfall_callback(null, email);
 			})
 		},
@@ -152,6 +157,8 @@ exports.queue_to_mongodb = function(next, connection) {
 		// Mail object
 		var _email = {
 			'haraka_body': body ? body : null,
+			'raw_html': _body_html,
+			'raw_text': _body_text,
 			'raw': email_object,
 			'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
 			'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,

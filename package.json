@@ -40,6 +40,7 @@
     "moment": "^2",
     "mongodb": "^3.2.7",
     "node-gyp": "^4.0.0",
+    "quoted-printable": "^1.0.1",
     "string": "^3.3.3",
     "tlds": "^1.203.1",
     "uuid": "^3"
