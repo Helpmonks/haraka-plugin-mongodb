@@ -122,7 +122,8 @@ exports.queue_to_mongodb = function(next, connection) {
 
 	async.waterfall([
 		function (waterfall_callback) {
-			_mp(plugin, connection, function(email) {
+			_mp(plugin, connection, function(error, email) {
+				if (error) return waterfall_callback(error, email);
 				_body_html = email.html || null;
 				_body_text = email.text || null;
 				return waterfall_callback(null, email);
@@ -152,7 +153,12 @@ exports.queue_to_mongodb = function(next, connection) {
 		}
 	],
 	function (error, email_object) {
-		if (error) { return waterfall_callback(error); }
+		if (error) {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror(`Error parsing email: `, error);
+			plugin.logerror('--------------------------------------');
+			next(DENY, "storage error");
+		}
 
 		// Mail object
 		var _email = {
@@ -572,13 +578,13 @@ function parseSubaddress(user) {
 
 function _mp(plugin, connection, cb) {
 	simpleParser(connection.transaction.message_stream, { Iconv, 'skipImageLinks' : true }, (error, mail) => {
-		if ( mail.attachments ) {
+		if ( mail && mail.attachments ) {
 			_storeAttachments(connection, plugin, mail.attachments, mail, function(error, mail_object) {
-				return cb(mail_object);
+				return cb(error, mail_object);
 			});
 		}
 		else {
-			return cb(mail);
+			return cb(error, mail);
 		}
 	});
 }
@@ -610,6 +616,9 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 	// loop through each attachment and attempt to store it locally
 	var is_tnef_attachment = false;
+
+	// Filter attachments starting with ~
+	attachments = attachments.filter(a => a.filename && a.filename.startsWith('~') ? false : true);
 
 	async.each(attachments, function (attachment, each_callback) {
 

@@ -13,9 +13,11 @@ const EmailBodyUtility = function() {
 
 	const _haraka_bodytext_variations = 'haraka_bodytext haraka_body_text_encoded'.split(' ');
 
-	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/gim;
-	const _windows_1252_charset_regex = /text\/html; charset=Windows-1252/gim;
-	const _contains_unicode_regex = /[^\\u0000-\\u00ff]/m;
+	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/im;
+	const _windows_1252_charset_regex = /text\/html; charset=Windows-1252/im;
+	const _contains_html_invalid_unicode = /\x82/;
+	const _contains_replacement_char_unicode = /\uFFFD/; // i.e �
+
 
 	var _log_module = false;
 	var _log_all_fields = false && _log_module;
@@ -51,7 +53,6 @@ const EmailBodyUtility = function() {
 
 				_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'html'...`);
 				var html_info = ! options.ignore_html_result ? _extractBody(email_obj, body, html_field_order, options) : { result : '' };
-
 				_log_module && ! has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), html result came from '${html_info.source}' and has a length of '${html_info.result.length}'`);
 
 				_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'text'...`);
@@ -90,7 +91,6 @@ const EmailBodyUtility = function() {
 				// override any html mailparser result we have if there's a valid text result
 				if (use_text_for_html) {
 					_log_module && console.log(`\ngetHtmlAndTextBody(), have no html or an invalid html result, converting text result to html`);
-
 					// copy over the html result, using the text as the body
 					html_info.result = convertPlainTextToHtml(text_info.result);
 					html_info.source = text_info.source;
@@ -112,6 +112,10 @@ const EmailBodyUtility = function() {
 					'html_has_valid_encoding' : html_info.has_valid_encoding,
 					'text_source' : text_info.source,
 					'text_has_valid_encoding' : text_info.has_valid_encoding,
+					'does_bodytext_contain_invalid_html' : html_info.does_bodytext_contain_html_invalid_unicode,
+					'does_body_text_encoded_contain_invalid_html' : html_info.does_body_text_encoded_contain_html_invalid_unicode,
+					'does_bodytext_contain_replacement_char_unicode' : html_info.does_bodytext_contain_replacement_char_unicode,
+					'does_body_text_encoded_contain_replacement_char_unicode' : html_info.does_body_text_encoded_contain_replacement_char_unicode
 				}
 			};
 
@@ -183,6 +187,10 @@ const EmailBodyUtility = function() {
 		var has_valid_encoding = false;
 		var has_broken_encoding = false;
 		var source = null;
+		var does_bodytext_contain_html_invalid_unicode = null;
+		var does_body_text_encoded_contain_html_invalid_unicode = null;
+		var does_bodytext_contain_replacement_char_unicode = null;
+		var does_body_text_encoded_contain_replacement_char_unicode = null;
 
 		_log_module && console.log(`_extractBody is using the following ${field_order.length} fields in the given order:`, field_order);
 
@@ -226,7 +234,16 @@ const EmailBodyUtility = function() {
 		// if the source is null set it to none
 		source = source || 'none';
 
-		return { 'result' : field_value, source, has_valid_encoding, alternate_bodies };
+		return {
+			'result' : field_value,
+			source,
+			has_valid_encoding,
+			alternate_bodies,
+			does_body_text_encoded_contain_html_invalid_unicode,
+			does_body_text_encoded_contain_replacement_char_unicode,
+			does_bodytext_contain_replacement_char_unicode,
+			does_bodytext_contain_html_invalid_unicode
+		};
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -279,11 +296,13 @@ const EmailBodyUtility = function() {
 			if (is_matching_node) {
 				_log_module && console.log(`${'\t'.repeat(depth)} [${index}] found a matching bodytype of length '${haraka_obj.bodytext.length || haraka_obj.body_text_encoded.length}' for type '${type}'`);
 
+				// grab each of the available values
+				var bodytext = haraka_obj.bodytext;
+				var haraka_body_text_encoded = _formatQuotedPrintableBody(haraka_obj.body_text_encoded);
+
 				// set has_valid_encoding
 				has_valid_encoding = !! haraka_obj.body_encoding && ! haraka_obj.body_encoding.includes('broken') && !! haraka_obj.bodytext;
 				has_broken_encoding = !! haraka_obj.body_encoding && haraka_obj.body_encoding.includes('broken') && !! haraka_obj.bodytext;
-
-				// var content_transfer_encoding = haraka_obj.header.headers['content-transfer-encoding'] ? haraka_obj.header.headers['content-transfer-encoding'][0] : null;
 
 				var bodytext_specified_encoding = haraka_obj.body_encoding ? haraka_obj.body_encoding.trim().toLowerCase() : null;
 				
@@ -297,23 +316,33 @@ const EmailBodyUtility = function() {
 				var body_text_encoded_encoding_normalized = body_text_encoded_encoding.encoding.trim().toLowerCase();
 				var does_specified_encoding_match_body_text_encoded_encoding = bodytext_specified_encoding === body_text_encoded_encoding_normalized;
 
-				var has_higher_body_text_encoding_confidence = bodytext_encoding.confidence >= body_text_encoded_encoding.confidence && body_text_encoded_encoding.confidence < 100;
+				does_bodytext_contain_html_invalid_unicode = _contains_html_invalid_unicode.test(bodytext);
+				does_body_text_encoded_contain_html_invalid_unicode = _contains_html_invalid_unicode.test(haraka_body_text_encoded);
+				does_bodytext_contain_replacement_char_unicode = _contains_replacement_char_unicode.test(bodytext);
+				does_body_text_encoded_contain_replacement_char_unicode = _contains_replacement_char_unicode.test(haraka_body_text_encoded);
+
+				var has_higher_bodytext_encoding_confidence = (bodytext_encoding.confidence >= body_text_encoded_encoding.confidence && body_text_encoded_encoding.confidence < 100)
+					|| (does_body_text_encoded_contain_html_invalid_unicode && ! does_bodytext_contain_html_invalid_unicode)
+					|| (does_body_text_encoded_contain_replacement_char_unicode && ! does_bodytext_contain_replacement_char_unicode);
 
 				var does_specified_encoding_match_neither_guessed_encoding = ! does_specified_encoding_match_body_text_encoded_encoding && ! does_specified_encoding_match_bodytext_encoding;
 
-				// prefer the bodytext if...
-				var prefer_bodytext =
-					(has_broken_encoding && bodytext_specified_encoding.includes('us-asci')) ||
-					// encoding is not broken, and has more confidence in the bodytext encoding
-					(! has_broken_encoding && (has_higher_body_text_encoding_confidence || ! does_specified_encoding_match_body_text_encoded_encoding))
-					// bodytext encoding is not ISO-8859-1, while bodytext_encoded_encoding is, and it's a 50% confident result
-					|| (bodytext_encoding_normalized !== 'iso-8859-1' && body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50);
+				var prefer_bodytext_for_ascii = has_broken_encoding && bodytext_specified_encoding.includes('us-asci');
+
+				var prefer_bodytext_for_encoding_confidence = ! has_broken_encoding && has_higher_bodytext_encoding_confidence 
+					&& (! does_bodytext_contain_replacement_char_unicode || does_body_text_encoded_contain_replacement_char_unicode || body_text_encoded_encoding.confidence < 20)
+
+				var prefer_bodytext_for_8859_values = bodytext_encoding_normalized !== 'iso-8859-1' && body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
+				var prefer_bodytext_for_8859_values = body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
+
+				// console.log('\n');
+				// console.log('prefer_bodytext_for_ascii:', prefer_bodytext_for_ascii);
+				// console.log('prefer_bodytext_for_encoding_confidence:', prefer_bodytext_for_encoding_confidence);
+				// console.log('prefer_bodytext_for_8859_values:', prefer_bodytext_for_8859_values)
+
+				var prefer_bodytext = prefer_bodytext_for_ascii || prefer_bodytext_for_encoding_confidence || prefer_bodytext_for_8859_values;
 
 				var use_bodytext = prefer_bodytext;
-
-				// grab each of the available values
-				var bodytext = haraka_obj.bodytext;
-				var haraka_body_text_encoded = _formatQuotedPrintableBody(haraka_obj.body_text_encoded);
 
 				var body = use_bodytext ? bodytext : haraka_body_text_encoded;
 				var source = use_bodytext ? 'haraka_bodytext' : `haraka_body_text_encoded`;
@@ -338,8 +367,6 @@ const EmailBodyUtility = function() {
 				var result = { body, source };
 
 				if (! options.store_alternates) { return result; }
-
-				var variations = _haraka_bodytext_variations;
 
 				// put together the alternate_body info to send back
 				var alternate_bodies = _haraka_bodytext_variations.filter(v => v !== source && source !== 'none').map((variation) => {
@@ -387,19 +414,24 @@ const EmailBodyUtility = function() {
 				console.log(`[${type}] charset:${haraka_obj.ct}`)
 
 				console.log(`[${type}] bodytext_specified_encoding: "${bodytext_specified_encoding}"`);
+				console.log('');
 				console.log(`[${type}] bodytext_encoding:\t\t\t`, bodytext_encoding);
 				console.log(`[${type}] does_specified_encoding_match_bodytext_encoding :`, does_specified_encoding_match_bodytext_encoding);
-
+				console.log(`[${type}] does_bodytext_contain_html_invalid_unicode:`, does_bodytext_contain_html_invalid_unicode);
+				console.log(`[${type}] does_bodytext_contain_replacement_char_unicode:`, does_bodytext_contain_replacement_char_unicode);
+				console.log('');
 				console.log(`[${type}] body_text_encoded_encoding:\t`, body_text_encoded_encoding);
 				console.log(`[${type}] does_specified_encoding_match_body_text_encoded_encoding :`, does_specified_encoding_match_body_text_encoded_encoding);
-				// console.log(`[${type}] content_transfer_encoding :`, content_transfer_encoding);
-
-				console.log(`[${type}] headers['content-type'] :`, haraka_obj.header.headers['content-type']);
-				console.log(`[${type}] has_valid_encoding :`, has_valid_encoding);
-				console.log(`[${type}] has_broken_encoding :`, has_broken_encoding);
-				console.log(`[${type}] encoding, ${haraka_obj.body_encoding}, is ${has_valid_encoding ? 'valid' : 'INVALID'}\n`);
-				use_bodytext && console.log(`[${type}] using haraka_bodytext`);
-				! use_bodytext && console.log(`[${type}] using haraka_bodytext_encoded`);
+				console.log(`[${type}] does_body_text_encoded_contain_html_invalid_unicode:`, does_body_text_encoded_contain_html_invalid_unicode);
+				console.log(`[${type}] does_body_text_encoded_contain_replacement_char_unicode:`, does_body_text_encoded_contain_replacement_char_unicode);
+				console.log('');
+				console.log(`[${type}] headers['content-type']:`, haraka_obj.header.headers['content-type']);
+				console.log(`[${type}] has_valid_encoding:`, has_valid_encoding);
+				console.log(`[${type}] has_broken_encoding:`, has_broken_encoding);
+				console.log(`[${type}] encoding, '${haraka_obj.body_encoding}', is ${has_valid_encoding ? 'valid' : 'INVALID'}\n`);
+				console.log('');
+				use_bodytext && console.log(`[${type}] using 'haraka_bodytext'`);
+				! use_bodytext && console.log(`[${type}] using 'haraka_bodytext_encoded'`);
 
 				console.log(`\n\n${'-'.repeat(180)}\n`);
 
