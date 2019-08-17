@@ -1,3 +1,7 @@
+# 1.4.4 - 2019-08-17
+
+- Further improvements to the parser
+
 # 1.4.3 - 2019-07-23
 
 - Further improvements to the parser
