@@ -1,3 +1,7 @@
+# 1.4.5 - 2019-08-
+
+- Attachments that don't have a CID but are still inline images but with a different contentdisposition get now a unique ID so they can be identified later on
+
 # 1.4.4 - 2019-08-17
 
 - Further improvements to the parser
