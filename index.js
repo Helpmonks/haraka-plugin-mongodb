@@ -657,6 +657,9 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		attachment.fileName = attachment.filename || attachment.fileName || 'attachment.txt';
 		attachment.generatedFileName = attachment.generatedFileName || attachment.fileName;
 
+		// If not CID exists
+		attachment.cid = attachment.cid ? attachment.cid : attachment_checksum;
+
 		// If filename is attachment.txt
 		if (attachment.fileName === 'attachment.txt') {
 			// Get ext from contenttype
