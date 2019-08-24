@@ -38,15 +38,15 @@
     "mailparser": "2.7.1",
     "mailsplit": "^4.4.1",
     "moment": "^2",
-    "mongodb": "^3.2.7",
+    "mongodb": "^3.3.1",
     "node-gyp": "^4.0.0",
     "quoted-printable": "^1.0.1",
     "string": "^3.3.3",
     "tlds": "^1.203.1",
-    "uuid": "^3"
+    "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "eslint": "^6.1.0",
+    "eslint": "^6.2.2",
     "eslint-plugin-haraka": "^1.0.11",
     "haraka-test-fixtures": "*",
     "mocha": "^6.2.0"
