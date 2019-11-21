@@ -1,3 +1,8 @@
+# 1.4.6 - 2019-11-21
+
+- Enhanced attachment filename clean up (all foreign chars are now converted to underscore)
+- Updated libraries
+
 # 1.4.5 - 2019-08-24
 
 - Attachments that don't have a CID but are still inline images but with a different contentdisposition get now a unique ID so they can be identified later on

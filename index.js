@@ -682,9 +682,24 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			attachment.generatedFileName = 'invite.ics';
 		}
 
-		// Clean up filename that could potentially cause an issue
-		attachment.fileName = attachment.fileName.replace(/[^A-Za-z0-9\-\_\.]/g, '');
-		attachment.generatedFileName = attachment.generatedFileName.replace(/[^A-Za-z0-9\-\_\.]/g, '');
+		// Filename cleanup
+		if (attachment.fileName !== 'attachment.txt' && attachment.fileName !== 'invite.ics') {
+
+			// Split filename by last dot
+			var _fN = attachment.fileName.split(/\.(?=[^\.]+$)/);
+			// Clean up filename that could potentially cause an issue
+			var _fN_clean = _fN[0].replace(/[^A-Za-z0-9]/g, '_');
+			// Finale Filename
+			attachment.fileName = `${_fN_clean}.${_fN[1]}`;
+
+			// Split generated filename by last dot
+			var _fNG = attachment.generatedFileName.split(/\.(?=[^\.]+$)/);
+			// Clean up filename that could potentially cause an issue
+			var _fNG_clean = _fNG[0].replace(/[^A-Za-z0-9]/g, '_');
+			// Finale Filename
+			attachment.generatedFileName = `${_fNG_clean}.${_fNG[1]}`;
+
+		}
 
 		// if generatedFileName is longer than 200
 		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
