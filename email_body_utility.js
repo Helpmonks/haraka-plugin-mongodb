@@ -13,6 +13,9 @@ const EmailBodyUtility = function() {
 
 	const _haraka_bodytext_variations = 'haraka_bodytext haraka_body_text_encoded'.split(' ');
 
+	const _linkify_text_size_threshold = 4915200;
+
+
 	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/im;
 	const _windows_1252_charset_regex = /text\/html; charset=Windows-1252/im;
 	const _contains_html_invalid_unicode = /\x82/;
@@ -134,6 +137,8 @@ const EmailBodyUtility = function() {
 	const convertPlainTextToHtml = function(text) {
 
 		if (! text) { return ''; }
+
+		if (typeof text !== 'string' || text.length > _linkify_text_size_threshold) { return text; } 
 
 		// use linkify to convert any links to <a>
 		var words = text.split(' ');
