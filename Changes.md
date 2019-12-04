@@ -1,3 +1,10 @@
+# 1.4.7 - 2019-12-04
+
+- Limiting parsing and converting from text to html to 4MB (we saw larger emails to hold up processing significantly)
+- Returning on error for some functions
+- Fixed some issues with returning from errors
+- Updated libraries
+
 # 1.4.6 - 2019-11-21
 
 - Enhanced attachment filename clean up (all foreign chars are now converted to underscore)

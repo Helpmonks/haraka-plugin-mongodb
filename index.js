@@ -2,10 +2,6 @@
 
 // Made by Helpmonks - http://helpmonks.com
 
-/* jshint esversion: 6 */
-
-'use strict';
-
 // Require
 const mongoc = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
@@ -17,7 +13,7 @@ const path = require('path');
 const S = require('string');
 const linkify = require('linkify-it')();
 const Iconv = require('iconv').Iconv;
-const simpleParser = require('mailparser').simpleParser
+const simpleParser = require('mailparser').simpleParser;
 const exec = require('child_process').exec;
 
 const EmailBodyUtility = require('./email_body_utility');
@@ -49,7 +45,7 @@ exports.register = function () {
 		plugin.register_hook('bounce', 'bounced_email');
 		plugin.register_hook('delivered', 'save_results_to_mongodb');
 	}
-}
+};
 
 exports.load_mongodb_ini = function () {
 	var plugin = this;
@@ -63,7 +59,7 @@ exports.load_mongodb_ini = function () {
 	function () {
 		plugin.load_mongodb_ini();
 	});
-}
+};
 
 exports.initialize_mongodb = function (next, server) {
 	var plugin = this;
@@ -77,7 +73,7 @@ exports.initialize_mongodb = function (next, server) {
 		}
 		connectionString += `${plugin.cfg.mongodb.host}:${plugin.cfg.mongodb.port}/${plugin.cfg.mongodb.db}`;
 
-		mongoc.connect(connectionString, { 'useNewUrlParser' : true }, function(err, client) {
+		mongoc.connect(connectionString, { 'useNewUrlParser': true, 'keepAlive': true, 'connectTimeoutMS': 0, 'socketTimeoutMS': 0 }, function(err, client) {
 			if (err) {
 				plugin.logerror('ERROR connecting to MongoDB !!!');
 				plugin.logerror(err);
@@ -123,22 +119,29 @@ exports.queue_to_mongodb = function(next, connection) {
 	async.waterfall([
 		function (waterfall_callback) {
 			_mp(plugin, connection, function(error, email) {
-				if (error) return waterfall_callback(error, email);
+				if (error) {
+					plugin.lognotice('--------------------------------------');
+					plugin.lognotice(' Error from _mp !!! ', error);
+					plugin.lognotice('--------------------------------------');
+					return waterfall_callback(error, email);
+				}
 				_body_html = email.html || null;
 				_body_text = email.text || null;
 				return waterfall_callback(null, email);
-			})
+			});
 		},
 		function (email, waterfall_callback) {
 			// Get proper body
 			EmailBodyUtility.getHtmlAndTextBody(email, body, function (error, html_and_text_body_info) {
-				if (error || ! html_and_text_body_info) { return callback && callback(error || `unable to extract any email body data from email id:'${email._id}'`); }
+				if (error || ! html_and_text_body_info) {
+					return waterfall_callback(error || `unable to extract any email body data from email id:'${email._id}'`);
+				}
 
 				return waterfall_callback(null, html_and_text_body_info, email);
 			});
 		},
 		function (body_info, email, waterfall_callback) {
-			plugin.lognotice(' body_info !!! ', body_info.meta);
+			plugin.lognotice(' body_info.meta !!! ', body_info.meta);
 			// Put values into object
 			email.extracted_html_from = body_info.meta.html_source;
 			email.extracted_text_from = body_info.meta.text_source;
@@ -149,7 +152,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			_checkInlineImages(plugin, email, function(error, email) {
 				// Return
 				return waterfall_callback(null, email);
-			})
+			});
 		}
 	],
 	function (error, email_object) {
@@ -157,7 +160,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror(`Error parsing email: `, error);
 			plugin.logerror('--------------------------------------');
-			next(DENY, "storage error");
+			return next(DENY, "storage error");
 		}
 
 		// Mail object
@@ -185,9 +188,9 @@ exports.queue_to_mongodb = function(next, connection) {
 			'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
 			'references' : email_object.references,
 			'pickup_date' : new Date(),
-			'mail_from' : connection.transaction.mail_from,
-			'rcpt_to' : connection.transaction.rcpt_to,
-			'size' : connection.transaction.data_bytes,
+			'mail_from' : connection && connection.transaction ? connection.transaction.mail_from : null,
+			'rcpt_to' : connection && connection.transaction ? connection.transaction.rcpt_to : null,
+			'size' : connection && connection.transaction ? connection.transaction.data_bytes : null,
 			'transferred' : false,
 			'processed' : false,
 			'extracted_html_from': email_object.extracted_html_from,
@@ -234,7 +237,7 @@ exports.data_post_email = function(next, connection) {
 	_mid = _mid.replace(/<|>/g, '');
 	connection.transaction.notes.message_id = _mid;
 	next();
-}
+};
 
 // SEND EMAIL
 exports.sending_email = function(next, hmail) {
@@ -250,11 +253,11 @@ exports.sending_email = function(next, hmail) {
 		'stage' : 'Sending email',
 		'timestamp' : new Date(),
 		'hook' : 'send_email'
-	}
+	};
 	// Save
 	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
-}
+};
 
 // GET MX
 exports.getting_mx = function(next, hmail, domain) {
@@ -272,11 +275,11 @@ exports.getting_mx = function(next, hmail, domain) {
 		'timestamp' : new Date(),
 		'hook' : 'get_mx',
 		'domain' : domain
-	}
+	};
 	// Save
 	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
-}
+};
 
 // DEFERRED
 exports.deferred_email = function(next, hmail, deferred_object) {
@@ -298,11 +301,11 @@ exports.deferred_email = function(next, hmail, deferred_object) {
 			'delay' : deferred_object.delay,
 			'error' : deferred_object.err
 		}
-	}
+	};
 	// Save
 	_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 	next();
-}
+};
 
 // BOUNCE
 exports.bounced_email = function(next, hmail, error) {
@@ -315,7 +318,13 @@ exports.bounced_email = function(next, hmail, error) {
 	var _date = moment().subtract(1, 'h').toISOString();
 	var _query = { 'rcpt_to' : _rcpt_to, 'timestamp' : { '$gt' : new Date(_date) } };
 	// Query if there is already a record for this user
-	server.notes.mongodb.collection(plugin.cfg.collections.delivery).find(_query).toArray(function(error, record) {
+	server.notes.mongodb.collection(plugin.cfg.collections.delivery).find(_query).toArray(function(err, record) {
+		if (err) {
+			plugin.lognotice('--------------------------------------');
+			plugin.lognotice(' Bounced email. Error on find !!! ', err);
+			plugin.lognotice('--------------------------------------');
+			return next();
+		}
 		// We store the bounce message in MongoDB no matter what
 		var _data = {
 			'message_id' : hmail.todo.notes.message_id,
@@ -326,7 +335,7 @@ exports.bounced_email = function(next, hmail, error) {
 			'bounce_error' : error ? error : null,
 			'rcpt_to' : _rcpt_to,
 			'rcpt_obj' : _rcpt
-		}
+		};
 		// Save
 		_saveDeliveryResults(_data, server.notes.mongodb, plugin);
 		// Send bounce message or not
@@ -336,8 +345,8 @@ exports.bounced_email = function(next, hmail, error) {
 		else {
 			return next();
 		}
-	})
-}
+	});
+};
 
 
 // DELIVERED
@@ -727,7 +736,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			// if we have an error, and it's not a directory already exists error then record it
 			if (error && error.errno != -17) {
 				plugin.logerror('Could not create a directory for storing the attachment !!!');
-				return each_callback;
+				return each_callback();
 			}
 
 			// Complete local path with the filename
@@ -737,7 +746,10 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			// Write attachment to disk
 			fs.writeFile(attachment_full_path, attachment.content, function (error) {
 				// Log
-				if (error) plugin.logerror(`Error saving attachment locally to path ${attachment_full_path}, error :`, error);
+				if (error) {
+					plugin.logerror(`Error saving attachment locally to path ${attachment_full_path}, error :`, error);
+					return each_callback();
+				}
 
 				// If we can store
 				plugin.lognotice(`Attachment ${attachment.generatedFileName} successfully stored locally (${attachment.length} bytes)`);
@@ -757,7 +769,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 					var tnef_process = exec(exec_command, function (error, stdout, stderr) {
 						var general_error = stderr || error;
 
-						// get the contents of the directory as all fo the attachments
+						// get the contents of the directory as all for the attachments
 						fs.readdir(attachment_directory, function (error, contents) {
 
 							// loop over each file in the direoctory that is not winmail.dat and add it as an attachment
@@ -801,6 +813,11 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		});
 	},
 	function (error) {
+		// If error
+		if (error) {
+			plugin.loginfo('Error in attachments', error, _attachments);
+			return cb(null, mail_object);
+		}
 		// Add attachment back to mail object
 		mail_object.attachments = _attachments;
 		// Log
@@ -866,9 +883,9 @@ function _checkInlineImages(plugin, email, callback) {
 				if ( _cid === 'base64' ) {
 					email.attachments = email.attachments.filter(a => a.checksum !== attachment.checksum);
 				}
-			})
+			});
 		}
-	})
+	});
 	// Return
 	return callback(null, email);
 }

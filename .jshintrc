@@ -1,0 +1,8 @@
+{
+	"loopfunc" : true,
+	"devel" : true,
+	"lastsemic" : true,
+	"node" : true,
+	"debug" : true,
+	"esversion" : 6
+}
