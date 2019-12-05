@@ -1,3 +1,7 @@
+# 1.4.8 - 2019-12-05
+
+- The filename of files within a winmail.dat are now cleaned up as well (surprisingly a lot of people are still sending those) 
+
 # 1.4.7 - 2019-12-04
 
 - Limiting parsing and converting from text to html to 4MB (we saw larger emails to hold up processing significantly)
