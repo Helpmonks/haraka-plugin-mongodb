@@ -694,19 +694,9 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		// Filename cleanup
 		if (attachment.fileName !== 'attachment.txt' && attachment.fileName !== 'invite.ics') {
 
-			// Split filename by last dot
-			var _fN = attachment.fileName.split(/\.(?=[^\.]+$)/);
-			// Clean up filename that could potentially cause an issue
-			var _fN_clean = _fN[0].replace(/[^A-Za-z0-9]/g, '_');
-			// Finale Filename
-			attachment.fileName = `${_fN_clean}.${_fN[1]}`;
-
-			// Split generated filename by last dot
-			var _fNG = attachment.generatedFileName.split(/\.(?=[^\.]+$)/);
-			// Clean up filename that could potentially cause an issue
-			var _fNG_clean = _fNG[0].replace(/[^A-Za-z0-9]/g, '_');
-			// Finale Filename
-			attachment.generatedFileName = `${_fNG_clean}.${_fNG[1]}`;
+			var _file_names = _cleanFileName(attachment.fileName, attachment.generatedFileName);
+			attachment.fileName = _file_names.file_name;
+			attachment.generatedFileName = _file_names.generated_file_name;
 
 		}
 
@@ -763,7 +753,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 					// use tnef to extract the file into the same directory
 					var exec_command = `tnef ${attachment_full_path} -C ${attachment_directory}`;
 
-					plugin.lognotice('converting winmail.dat by calling :', exec_command);
+					plugin.lognotice('WINMAIL: Converting :', exec_command);
 
 					// execute the tnef process to extract the real attachment
 					var tnef_process = exec(exec_command, function (error, stdout, stderr) {
@@ -772,22 +762,42 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 						// get the contents of the directory as all for the attachments
 						fs.readdir(attachment_directory, function (error, contents) {
 
-							// loop over each file in the direoctory that is not winmail.dat and add it as an attachment
+							// loop over each file in the directory that is not winmail.dat and add it as an attachment
 							async.eachLimit(contents.filter((fn) => fn !== 'winmail.dat'), 3, function (file_name, each_callback) {
-								// get the size of the file from the stats
-								var attachment_file_path = path.join(attachment_directory, file_name);
-								fs.stat(attachment_file_path, function (error, stats) {
 
-									if (error) plugin.logerror('errror getting stats, error :', error);
+								// Path to original file
+								var _path_org = path.join(attachment_directory, file_name);
+								// plugin.loginfo(`WINMAIL.DAT: PATH ORG: ${_path_org}`);
+
+								// Convert filename
+								var _file_names = _cleanFileName(file_name, file_name);
+								var _file_name_new = _file_names.file_name;
+								// plugin.loginfo(`WINMAIL.DAT: NEW NAME: ${_file_name_new}`);
+
+								// Path to new file
+								var _path_new = path.join(attachment_directory, _file_name_new);
+								// plugin.loginfo(`WINMAIL.DAT: NEW PATH: ${_file_name_new}`);
+
+								// Convert the name on disk
+								try {
+									fs.moveSync(_path_org, _path_new, { overwrite: true });
+								}
+								catch(e) {}
+
+								// get the size of the file from the stats
+								fs.stat(_path_new, function (error, stats) {
+
+									if (error) plugin.logerror('error getting stats, error :', error);
 
 									var attachment = {
 										'length' : stats ? +stats.size : 0,
-										'fileName' : file_name,
-										'generatedFileName' : file_name,
+										'fileName' : _file_name_new,
+										'generatedFileName' : _file_name_new,
 										'checksum' : attachment_checksum
 									};
-
-									// plugin.lognotice('tnef extracted attachment : ', attachment);
+									// plugin.loginfo(`WINMAIL.DAT: ATTACHMENT OBJECT: ${_file_name_new}`);
+									// If we can store
+									plugin.loginfo(`WINMAIL: Attachment ${_file_name_new} successfully stored locally`);
 
 									_attachments.push(attachment);
 
@@ -888,4 +898,25 @@ function _checkInlineImages(plugin, email, callback) {
 	});
 	// Return
 	return callback(null, email);
+}
+
+// Cleanup filename of attachment
+function _cleanFileName(file_name, generated_file_name) {
+	
+	// Split filename by last dot
+	var _fN = file_name.split(/\.(?=[^\.]+$)/);
+	// Clean up filename that could potentially cause an issue
+	var _fN_clean = _fN[0].replace(/[^A-Za-z0-9]/g, '_');
+	
+	// Split generated filename by last dot
+	var _fNG = generated_file_name.split(/\.(?=[^\.]+$)/);
+	// Clean up filename that could potentially cause an issue
+	var _fNG_clean = _fNG[0].replace(/[^A-Za-z0-9]/g, '_');
+
+	// Return
+	return {
+		'file_name' : `${_fN_clean}.${_fN[1]}`,
+		'generated_file_name' : `${_fNG_clean}.${_fNG[1]}`
+	};
+
 }
