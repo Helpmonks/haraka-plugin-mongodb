@@ -17,7 +17,7 @@ const EmailBodyUtility = function() {
 
 
 	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/im;
-	const _windows_1252_charset_regex = /text\/html; charset=Windows-1252/im;
+	const _windows_charset_regex = /text\/html;\s*charset=Windows-125(2|7)/im;
 	const _contains_html_invalid_unicode = /\x82/;
 	const _contains_replacement_char_unicode = /\uFFFD/; // i.e �
 
@@ -343,7 +343,7 @@ const EmailBodyUtility = function() {
 				// console.log('\n');
 				// console.log('prefer_bodytext_for_ascii:', prefer_bodytext_for_ascii);
 				// console.log('prefer_bodytext_for_encoding_confidence:', prefer_bodytext_for_encoding_confidence);
-				// console.log('prefer_bodytext_for_8859_values:', prefer_bodytext_for_8859_values)
+				// console.log('prefer_bodytext_for_8859_values:', prefer_bodytext_for_8859_values);
 
 				var prefer_bodytext = prefer_bodytext_for_ascii || prefer_bodytext_for_encoding_confidence || prefer_bodytext_for_8859_values;
 
@@ -352,8 +352,16 @@ const EmailBodyUtility = function() {
 				var body = use_bodytext ? bodytext : haraka_body_text_encoded;
 				var source = use_bodytext ? 'haraka_bodytext' : `haraka_body_text_encoded`;
 
+				var header_content_type = Array.isArray(haraka_obj.header.headers['content-type']) ? haraka_obj.header.headers['content-type'].join(' ') : haraka_obj.header.headers['content-type'] || '';
+
 				// replace the html's designated chartype
-				var replace_html_charset_directive = body && type === 'text/html' && (bodytext_encoding_normalized === 'iso-8859-1' || body_text_encoded_encoding_normalized === 'iso-8859-1');				
+				var replace_html_charset_directive = body && type === 'text/html' && (
+					bodytext_encoding_normalized === 'iso-8859-1'
+					|| body_text_encoded_encoding_normalized === 'iso-8859-1'
+					|| header_content_type.includes('charset=windows-1257')
+				);
+
+				_log_module && console.log('replace_html_charset_directive:', replace_html_charset_directive);
 
 				// ISO-8859
 				if (replace_html_charset_directive && _iso_8859_charset_regex.test(body)) {
@@ -362,9 +370,9 @@ const EmailBodyUtility = function() {
 				}
 
 				// Windows-1252 can appear in the html when the chaset is ISO-8859-1 				
-				if (replace_html_charset_directive && _windows_1252_charset_regex.test(body)) {
+				if (replace_html_charset_directive && _windows_charset_regex.test(body)) {
 					_log_module && console.log(`replacing Windows-1252 charset directive in the html`);
-					body = body.replace(_windows_1252_charset_regex, 'text/html;');
+					body = body.replace(_windows_charset_regex, 'text/html;');
 				}
 
 				_printParseInfo();
@@ -421,12 +429,12 @@ const EmailBodyUtility = function() {
 				console.log(`[${type}] bodytext_specified_encoding: "${bodytext_specified_encoding}"`);
 				console.log('');
 				console.log(`[${type}] bodytext_encoding:\t\t\t`, bodytext_encoding);
-				console.log(`[${type}] does_specified_encoding_match_bodytext_encoding :`, does_specified_encoding_match_bodytext_encoding);
+				console.log(`[${type}] does_specified_encoding_match_bodytext_encoding:`, does_specified_encoding_match_bodytext_encoding);
 				console.log(`[${type}] does_bodytext_contain_html_invalid_unicode:`, does_bodytext_contain_html_invalid_unicode);
 				console.log(`[${type}] does_bodytext_contain_replacement_char_unicode:`, does_bodytext_contain_replacement_char_unicode);
 				console.log('');
 				console.log(`[${type}] body_text_encoded_encoding:\t`, body_text_encoded_encoding);
-				console.log(`[${type}] does_specified_encoding_match_body_text_encoded_encoding :`, does_specified_encoding_match_body_text_encoded_encoding);
+				console.log(`[${type}] does_specified_encoding_match_body_text_encoded_encoding:`, does_specified_encoding_match_body_text_encoded_encoding);
 				console.log(`[${type}] does_body_text_encoded_contain_html_invalid_unicode:`, does_body_text_encoded_contain_html_invalid_unicode);
 				console.log(`[${type}] does_body_text_encoded_contain_replacement_char_unicode:`, does_body_text_encoded_contain_replacement_char_unicode);
 				console.log('');
