@@ -1,3 +1,8 @@
+# 1.4.9 - 2020-01-20
+
+- Fix for emails with different charset
+- Updated libraries
+
 # 1.4.8 - 2019-12-05
 
 - The filename of files within a winmail.dat are now cleaned up as well (surprisingly a lot of people are still sending those) 
