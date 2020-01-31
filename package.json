@@ -33,7 +33,7 @@
     "decode-html": "^2",
     "detect-character-encoding": "^0.8.0",
     "fs-extra": "^8.1.0",
-    "iconv": "2.3.3",
+    "iconv": "^2.3",
     "linkify-it": "^2.2.0",
     "mailparser": "2.7.6",
     "mailsplit": "^4.6.4",
