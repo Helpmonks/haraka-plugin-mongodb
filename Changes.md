@@ -1,3 +1,8 @@
+# 1.5.0 - 2020-01-31
+
+- Further enhancements for emails with different charset
+- New and updated libraries
+
 # 1.4.9 - 2020-01-20
 
 - Fix for emails with different charset

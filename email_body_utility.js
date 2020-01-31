@@ -16,8 +16,10 @@ const EmailBodyUtility = function() {
 	const _linkify_text_size_threshold = 4915200;
 
 
-	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/im;
-	const _windows_charset_regex = /text\/html;\s*charset=Windows-125(2|7)/im;
+	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/img;
+	const _windows_charset_regex = /text\/html;\s*charset=Windows-125(2|7)/img;
+	
+	const _uses_windows_1257_charset = /charset=Windows-1257/im;
 	const _contains_html_invalid_unicode = /\x82/;
 	const _contains_replacement_char_unicode = /\uFFFD/; // i.e �
 
@@ -42,6 +44,7 @@ const EmailBodyUtility = function() {
 		if (_specified_options.includes('log_all_fields')) { _log_module = _log_all_fields && !! options.log_all_fields; }
 
 		var has_rfc_822_message = false;
+		var uses_windows_1257_charset = false;
 
 		async.waterfall([
 			/* get basic html and text bodies */
@@ -50,9 +53,13 @@ const EmailBodyUtility = function() {
 				has_rfc_822_message = _getDistinctFieldValues(body, 'ct').includes('message/rfc822');
 				_log_module && has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), has RFC-822 message, using mailparser result`);
 
+				uses_windows_1257_charset = _uses_windows_1257_charset.test(email_obj.html);
+
+				var prefer_mailparser =  has_rfc_822_message || uses_windows_1257_charset;
+
 				// continue to use mailparser result if rfc_822 message is present
-				var html_field_order = has_rfc_822_message ? 'mailparser_html mailparser_text_as_html'.split(' ') : _default_html_field_order;
-				var text_field_order = has_rfc_822_message ? 'mailparser_text bodytext_plain'.split(' ') : _default_text_field_order;
+				var html_field_order = prefer_mailparser ? 'mailparser_html mailparser_text_as_html'.split(' ') : _default_html_field_order;
+				var text_field_order = prefer_mailparser ? 'mailparser_text bodytext_plain'.split(' ') : _default_text_field_order;
 
 				_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'html'...`);
 				var html_info = ! options.ignore_html_result ? _extractBody(email_obj, body, html_field_order, options) : { result : '' };
@@ -263,8 +270,11 @@ const EmailBodyUtility = function() {
 					return getBodyOfTypeFromChildren(body, 'text/plain');
 
 				case 'mailparser_html':
+
+					var body = _cleanCharsetsFromHTML(email_obj.html || '');
+
 					return {
-						'body' : email_obj.html || '',
+						body,
 						'source' : 'mailparser_html'
 					};
 
@@ -340,11 +350,6 @@ const EmailBodyUtility = function() {
 				var prefer_bodytext_for_8859_values = bodytext_encoding_normalized !== 'iso-8859-1' && body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
 				var prefer_bodytext_for_8859_values = body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
 
-				// console.log('\n');
-				// console.log('prefer_bodytext_for_ascii:', prefer_bodytext_for_ascii);
-				// console.log('prefer_bodytext_for_encoding_confidence:', prefer_bodytext_for_encoding_confidence);
-				// console.log('prefer_bodytext_for_8859_values:', prefer_bodytext_for_8859_values);
-
 				var prefer_bodytext = prefer_bodytext_for_ascii || prefer_bodytext_for_encoding_confidence || prefer_bodytext_for_8859_values;
 
 				var use_bodytext = prefer_bodytext;
@@ -354,26 +359,8 @@ const EmailBodyUtility = function() {
 
 				var header_content_type = Array.isArray(haraka_obj.header.headers['content-type']) ? haraka_obj.header.headers['content-type'].join(' ') : haraka_obj.header.headers['content-type'] || '';
 
-				// replace the html's designated chartype
-				var replace_html_charset_directive = body && type === 'text/html' && (
-					bodytext_encoding_normalized === 'iso-8859-1'
-					|| body_text_encoded_encoding_normalized === 'iso-8859-1'
-					|| header_content_type.includes('charset=windows-1257')
-				);
-
-				_log_module && console.log('replace_html_charset_directive:', replace_html_charset_directive);
-
-				// ISO-8859
-				if (replace_html_charset_directive && _iso_8859_charset_regex.test(body)) {
-					_log_module && console.log(`replacing iso-8859 charset directive in the html`);
-					body = body.replace(_iso_8859_charset_regex, 'text/html;');
-				}
-
-				// Windows-1252 can appear in the html when the chaset is ISO-8859-1 				
-				if (replace_html_charset_directive && _windows_charset_regex.test(body)) {
-					_log_module && console.log(`replacing Windows-1252 charset directive in the html`);
-					body = body.replace(_windows_charset_regex, 'text/html;');
-				}
+				// if we're working with html then clean up the embedded charsets
+				if (type === 'text/html') { body = _cleanCharsetsFromHTML(body); }
 
 				_printParseInfo();
 
@@ -463,6 +450,24 @@ const EmailBodyUtility = function() {
 				console.log(`\n[END :${type}]${'*'.repeat(180)}\n\n`);
 			}
 		}
+	};
+
+	const _cleanCharsetsFromHTML = function(body) {
+
+		// ISO-8859
+		if (_iso_8859_charset_regex.test(body)) {
+			_log_module && console.log(`replacing iso-8859 charset directives, which are present in the html`);
+			body = body.replace(_iso_8859_charset_regex, 'text/html;');
+		}
+
+		// Windows-1252 or 1257 can appear in the html when the charset is ISO-8859-1 				
+		if (_windows_charset_regex.test(body)) {
+			_log_module && console.log(`replacing Windows-1252 or -1257 charset directives, which are present in the html`);
+			body = body.replace(_windows_charset_regex, 'text/html;');
+		}
+
+		// return body.trim();
+		return body;
 	};
 
 	const _getDistinctFieldValues = function(haraka_obj, field, depth = 0, index = 0) {
