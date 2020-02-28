@@ -1,3 +1,8 @@
+# 1.5.1 - 2020-02-27
+
+- Node 12 compatibility
+- Library updates
+
 # 1.5.0 - 2020-01-31
 
 - Further enhancements for emails with different charset
