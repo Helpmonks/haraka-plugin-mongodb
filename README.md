@@ -11,7 +11,7 @@ As of version 1.1.5 this plugin also takes care of bounced messages, i.e., were 
 Depending on your operating system, you might first have to install python, make, and compiler, e.g.:
 
 ```
-apt install python2 make cmake g++
+apt install python2 make cmake g++ build-essentials
 ```
 
 In order to store winmail.dat files (yes some people are still using those) you need to also install tnef with:
@@ -29,6 +29,16 @@ npm install haraka-plugin-mongodb
 This will install everything that is needed for you to store incoming emails to MongoDB and also store results from outgoing emails.
 
 Alternatively you can also do a git clone into the Haraka node_modules directory. The installation directory depends if you installed Haraka globally or not.
+
+# Installation issues with iconv and node-gyp
+
+You might run into issues with iconv and node-gyp installation. Our suggested workaround is to use:
+
+```
+npm -g config set user root
+```
+
+and then install node-gyp globally and reinstall Haraka. Hope this helps.
 
 # Configuration
 
