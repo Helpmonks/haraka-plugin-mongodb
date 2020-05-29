@@ -160,7 +160,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror(`Error parsing email: `, error);
 			plugin.logerror('--------------------------------------');
-			return next(DENY, "storage error");
+			return next(DENYSOFT, "storage error");
 		}
 
 		// Mail object
@@ -208,7 +208,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.logerror('--------------------------------------');
 				plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err);
 				plugin.logerror('--------------------------------------');
-				next(DENY, "storage error");
+				next(DENYSOFT, "storage error");
 			} else {
 				plugin.lognotice('--------------------------------------');
 				plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
