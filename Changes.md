@@ -1,3 +1,8 @@
+# 1.5.2 - 2020-05-28
+
+- Upon a storage error we return now a DENYSOFT (previously it was a DENY)
+- Library updates
+
 # 1.5.1 - 2020-02-27
 
 - Node 12 compatibility
