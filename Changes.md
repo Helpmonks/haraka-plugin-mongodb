@@ -1,3 +1,7 @@
+# 1.5.3 - 2020-05-31
+
+- Prevented and fixed a crash when one of the email bodies is empty (thanks manalejandro - https://github.com/Helpmonks/haraka-plugin-mongodb/issues/9)
+
 # 1.5.2 - 2020-05-28
 
 - Upon a storage error we return now a DENYSOFT (previously it was a DENY)

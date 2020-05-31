@@ -510,9 +510,11 @@ const EmailBodyUtility = function() {
 		// _log_module && console.log(`_formatQuotedPrintableBody() has body_text_encoded of length:`, body_text_encoded.length);
 		// _log_all_fields && console.log(`_formatQuotedPrintableBody() body_text_encoded:`, body_text_encoded);
 
+		if (!body_text_encoded) return null;
+
 		const _regex = /=\n/gm;
 
-		var fixed_body = body_text_encoded.replace(/=\n/gm, '');
+		var fixed_body = body_text_encoded ? body_text_encoded.replace(/=\n/gm, '') : '';
 
 		var formatted_body = null;
 		try {
