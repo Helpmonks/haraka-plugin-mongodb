@@ -1,3 +1,7 @@
+# 1.5.7 - 2020-06-16
+
+- Added check that we have a proper path for path_check
+
 # 1.5.5. && 1.5.6 - 2020-06-16
 
 - Fixed an issue where all hooks were loaded independent of the mechanism, i.e., queue or delivery.
