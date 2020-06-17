@@ -1,3 +1,8 @@
+# 1.5.5. && 1.5.6 - 2020-06-16
+
+- Fixed an issue where all hooks were loaded independent of the mechanism, i.e., queue or delivery.
+- Updated README with the new path_check setting
+
 # 1.5.4 - 2020-06-16
 
 - Added the option to check for an attachment path. When the attachment path disappears (think Ceph, Gluster, etc.) then the Haraka process is being stopped as well

@@ -33,12 +33,12 @@ exports.register = function () {
 	plugin.register_hook('init_child', 'initialize_mongodb');
 
 	// Enable for queue
-	if (plugin.cfg.enable.queue) {
+	if (plugin.cfg.enable.queue === 'yes') {
 		plugin.register_hook('data', 'enable_transaction_body_parse');
 		plugin.register_hook('queue', 'queue_to_mongodb');
 	}
 	// Enable for delivery results
-	if (plugin.cfg.enable.delivery) {
+	if (plugin.cfg.enable.delivery === 'yes') {
 		plugin.register_hook('data_post', 'data_post_email');
 		plugin.register_hook('send_email', 'sending_email');
 		plugin.register_hook('get_mx', 'getting_mx');
@@ -928,7 +928,7 @@ function _cleanFileName(file_name, generated_file_name) {
 function _checkAttachmentPaths(plugin) {
 
 	// Only for incoming
-	if (plugin.cfg.enable.delivery) return;
+	if (plugin.cfg.enable.delivery === 'yes') return;
 
 	// Get paths
 	var _attachment_path = plugin.cfg.attachments.path_check;
