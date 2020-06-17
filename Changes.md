@@ -1,3 +1,10 @@
+# 1.5.4 - 2020-06-16
+
+- Added the option to check for an attachment path. When the attachment path disappears (think Ceph, Gluster, etc.) then the Haraka process is being stopped as well
+- Added "path_check" as new setting (by default it is empty)
+- Updated libraries
+- NOTE: Do NOT point "path_check" to the attachment directory itself but to its parent. The script will create a directory called "check" there. Otherwise, it will scan your whole attachment directory!
+
 # 1.5.3 - 2020-05-31
 
 - Prevented and fixed a crash when one of the email bodies is empty (thanks manalejandro - https://github.com/Helpmonks/haraka-plugin-mongodb/issues/9)
