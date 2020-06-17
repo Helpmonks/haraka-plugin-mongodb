@@ -11,6 +11,7 @@ const moment = require('moment');
 const fs = require('fs-extra');
 const path = require('path');
 const S = require('string');
+const watch = require('watch');
 const linkify = require('linkify-it')();
 const Iconv = require('iconv').Iconv;
 const simpleParser = require('mailparser').simpleParser;
@@ -87,6 +88,8 @@ exports.initialize_mongodb = function (next, server) {
 			plugin.lognotice('-------------------------------------- ');
 			plugin.lognotice('   Waiting for emails to arrive !!!    ');
 			plugin.lognotice('-------------------------------------- ');
+			// Initiate a watch on the attachment path
+			_checkAttachmentPaths(plugin);
 			next();
 		});
 	}
@@ -919,4 +922,58 @@ function _cleanFileName(file_name, generated_file_name) {
 		'generated_file_name' : `${_fNG_clean}.${_fNG[1]}`
 	};
 
+}
+
+// Check attachment paths and that we have access
+function _checkAttachmentPaths(plugin) {
+
+	// Only for incoming
+	if (plugin.cfg.enable.delivery) return;
+
+	// Get paths
+	var _attachment_path = plugin.cfg.attachments.path_check;
+
+	// if not defined
+	if (!_attachment_path) return;
+
+	var _pathtowatch = _attachment_path;
+	var _watch_options = {
+		'ignoreDotFiles' : false,
+		'interval' : 1,
+		'ignoreUnreadableDir' : false,
+		'ignoreNotPermitted' : false,
+		'ignoreDirectoryPattern' : false
+	};
+
+	_pathtowatch = `${_pathtowatch}check/`;
+
+	plugin.lognotice( `---------------------------------------------------------------` );
+	plugin.lognotice( `Starting directory watch on:` );
+	plugin.lognotice( `${_pathtowatch}` );
+	plugin.lognotice( `---------------------------------------------------------------` );
+
+	var _the_file = `${_pathtowatch}.helpmonks_watch`
+
+	// Create a file in the attachment dir
+	fs.ensureFileSync(_the_file);
+
+	watch.createMonitor(_pathtowatch, function (monitor) {
+		monitor.files[_the_file];
+		// Handle new files
+		monitor.on("created", function (f, stat) {
+		})
+		// Handle file changes
+		monitor.on("changed", function (f, curr, prev) {
+		})
+		// Handle removed files
+		monitor.on("removed", function (f, stat) {
+			// Only exit if the path contains our watch file
+			if ( !f.includes('.helpmonks_watch') ) return;
+			plugin.logerror( `---------------------------------------------------------------` );
+			plugin.logerror( 'Attachment directory is not accessible anymore!!!')
+			plugin.logerror( `---------------------------------------------------------------` );
+			// Exit out with an error
+			throw 'Attachment directory is not available'
+		})
+	});
 }
