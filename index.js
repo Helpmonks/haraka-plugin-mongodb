@@ -945,7 +945,7 @@ function _checkAttachmentPaths(plugin) {
 		'ignoreDirectoryPattern' : false
 	};
 
-	_pathtowatch = `${_pathtowatch}check/`;
+	_pathtowatch = `${_pathtowatch}check/`.replace('//','/');
 
 	plugin.lognotice( `---------------------------------------------------------------` );
 	plugin.lognotice( `Starting directory watch on:` );
