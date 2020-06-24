@@ -1,6 +1,9 @@
-# 1.5.7 - 2020-06-16
+# 1.5.7 - 2020-06-24
 
 - Added check that we have a proper path for path_check
+- Fixed an issue with leftover code that potentially could spike the CPU to 100%
+- All dates are now properly recorded
+- Some errors were not being printed in the log
 
 # 1.5.5. && 1.5.6 - 2020-06-16
 
