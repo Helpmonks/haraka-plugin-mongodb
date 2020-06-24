@@ -123,9 +123,9 @@ exports.queue_to_mongodb = function(next, connection) {
 		function (waterfall_callback) {
 			_mp(plugin, connection, function(error, email) {
 				if (error) {
-					plugin.lognotice('--------------------------------------');
-					plugin.lognotice(' Error from _mp !!! ', error);
-					plugin.lognotice('--------------------------------------');
+					plugin.logerror('--------------------------------------');
+					plugin.logerror(' Error from _mp !!! ', error.message);
+					plugin.logerror('--------------------------------------');
 					return waterfall_callback(error, email);
 				}
 				_body_html = email.html || null;
@@ -161,10 +161,12 @@ exports.queue_to_mongodb = function(next, connection) {
 	function (error, email_object) {
 		if (error) {
 			plugin.logerror('--------------------------------------');
-			plugin.logerror(`Error parsing email: `, error);
+			plugin.logerror(`Error parsing email: `, error.message);
 			plugin.logerror('--------------------------------------');
 			return next(DENYSOFT, "storage error");
 		}
+
+		var _now = new Date();
 
 		// Mail object
 		var _email = {
@@ -177,20 +179,20 @@ exports.queue_to_mongodb = function(next, connection) {
 			'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
 			'bcc': email_object.headers.get('bcc') ? email_object.headers.get('bcc').value : null,
 			'subject': email_object.subject,
-			'date': email_object.date,
-			'received_date': email_object.headers.get('date') ? email_object.headers.get('date') : null,
+			'date': email_object.date || email_object.headers.get('date'),
+			'received_date': _now,
 			'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
 			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
 			'html': email_object.html,
 			'text': email_object.text ? email_object.text : null,
-			'timestamp': new Date(),
+			'timestamp': _now,
 			'status': 'unprocessed',
 			'source': 'haraka',
 			'in_reply_to' : email_object.inReplyTo,
 			'reply_to' : email_object.headers.get('reply-to') ? email_object.headers.get('reply-to').value : null,
 			'references' : email_object.references,
-			'pickup_date' : new Date(),
+			'pickup_date' : _now,
 			'mail_from' : connection && connection.transaction ? connection.transaction.mail_from : null,
 			'rcpt_to' : connection && connection.transaction ? connection.transaction.rcpt_to : null,
 			'size' : connection && connection.transaction ? connection.transaction.data_bytes : null,
@@ -209,7 +211,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
 			if (err) {
 				plugin.logerror('--------------------------------------');
-				plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err);
+				plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
 				plugin.logerror('--------------------------------------');
 				next(DENYSOFT, "storage error");
 			} else {
@@ -845,11 +847,16 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 function _checkInlineImages(plugin, email, callback) {
 	// No need if there are no attachments
 	if ( email.attachments && !email.attachments.length ) return callback(null, email);
+	// if we should leave inline images as cid values
+	if ( _cid === 'cid' ) {
+		// Return
+		return callback(null, email);
+	}
 	// Clean up any text inline image tags
-	email.text = email.text.replace(/\[data:image(.*?)\]/g, '');
-	email.html = email.html.replace(/\[data:image(.*?)\]/g, '');
-	email.text = email.text.replace(/\[cid:(.*?)\]/g, '');
-	email.html = email.html.replace(/\[cid:(.*?)\]/g, '');
+	// email.text = email.text.replace(/\[data:image(.*?)\]/g, '');
+	// email.html = email.html.replace(/\[data:image(.*?)\]/g, '');
+	// email.text = email.text.replace(/\[cid:(.*?)\]/g, '');
+	// email.html = email.html.replace(/\[cid:(.*?)\]/g, '');
 	// Path to attachments dir
 	var _attachments_folder_path = plugin.cfg.attachments.path;
 	// Get cid settings
@@ -860,12 +867,6 @@ function _checkInlineImages(plugin, email, callback) {
 	// plugin.loginfo('email.attachments : ', email.attachments);
 	// plugin.loginfo('CID setting : ', _cid);
 	// plugin.loginfo('--------------------------------------');
-
-	// if we should leave inline images as cid values
-	if ( _cid === 'cid' ) {
-		// Return
-		return callback(null, email);
-	}
 
 	// Loop over attachments
 	email.attachments.forEach(function(attachment) {
@@ -945,7 +946,7 @@ function _checkAttachmentPaths(plugin) {
 		'ignoreDirectoryPattern' : false
 	};
 
-	_pathtowatch = `${_pathtowatch}check/`;
+	_pathtowatch = `${_pathtowatch}check/`.replace('//','/');
 
 	plugin.lognotice( `---------------------------------------------------------------` );
 	plugin.lognotice( `Starting directory watch on:` );
