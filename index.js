@@ -691,6 +691,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			var _ext = attachment.contentType.split('/');
 			try {
 				_ext = _ext[1];
+				_ext = _ext.length > 4 ? 'txt' : _ext;
 				attachment.fileName = `attachment.${_ext}`;
 				attachment.generatedFileName = attachment.fileName;
 			} catch(e) {
