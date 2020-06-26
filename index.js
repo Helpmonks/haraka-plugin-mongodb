@@ -865,10 +865,9 @@ function _checkInlineImages(plugin, email, callback) {
 	// Path to attachments dir
 	var _attachments_folder_path = plugin.cfg.attachments.path;
 
-	plugin.loginfo('--------------------------------------');
-	plugin.loginfo('checkInlineImages');
-	plugin.loginfo('email : ', email.html);
-	plugin.loginfo('--------------------------------------');
+	// plugin.loginfo('--------------------------------------');
+	// plugin.loginfo('checkInlineImages');
+	// plugin.loginfo('--------------------------------------');
 
 	// Loop over attachments
 	email.attachments.forEach(function(attachment) {

@@ -1,4 +1,4 @@
-# 1.5.8 - 2020-06-26
+# 1.5.8 && 1.5.9 - 2020-06-26
 
 - Fixed an issue with inline images which were not parsed properly anymore as of 1.5.7
 - Enhanced performance for inline images
