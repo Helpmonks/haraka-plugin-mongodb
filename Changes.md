@@ -1,3 +1,9 @@
+# 1.5.8 - 2020-06-26
+
+- Fixed an issue with inline images which were not parsed properly anymore as of 1.5.7
+- Enhanced performance for inline images
+- Made some other improvements to the attachment parsing
+
 # 1.5.7 - 2020-06-24
 
 - Added check that we have a proper path for path_check

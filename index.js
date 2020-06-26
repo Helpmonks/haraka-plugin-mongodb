@@ -679,30 +679,30 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			attachment.contentDisposition = attachment.type;
 		}
 
-		// If filename is attachment.txt
-		if (attachment.fileName === 'attachment.txt') {
-			// Get ext from contenttype
-			var _ext = attachment.contentType ? attachment.contentType.split('/')[1] : 'txt';
-			var _ext_len = _ext.length;
-			if (_ext_len <= 4) {
-				attachment.fileName = `attachment.${_ext}`;
-				attachment.generatedFileName = attachment.fileName;
-			}
-		}
-
 		// For calendar events
-		if ( attachment.contentType === 'text/calendar' ) {
+		if ( attachment.contentType && attachment.contentType === 'text/calendar' ) {
 			attachment.fileName = 'invite.ics';
 			attachment.generatedFileName = 'invite.ics';
 		}
 
+		// If filename is attachment.txt
+		if (attachment.fileName === 'attachment.txt' && attachment.contentType && attachment.contentType.includes('/') ) {
+			// Get ext from contenttype
+			var _ext = attachment.contentType.split('/');
+			try {
+				_ext = _ext[1];
+				attachment.fileName = `attachment.${_ext}`;
+				attachment.generatedFileName = attachment.fileName;
+			} catch(e) {
+				plugin.loginfo('Not able to parse extension from contenttype')
+			}
+		}
+
 		// Filename cleanup
 		if (attachment.fileName !== 'attachment.txt' && attachment.fileName !== 'invite.ics') {
-
 			var _file_names = _cleanFileName(attachment.fileName, attachment.generatedFileName);
 			attachment.fileName = _file_names.file_name;
 			attachment.generatedFileName = _file_names.generated_file_name;
-
 		}
 
 		// if generatedFileName is longer than 200
@@ -845,28 +845,30 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 // Check inline images and replace
 function _checkInlineImages(plugin, email, callback) {
+	
 	// No need if there are no attachments
 	if ( email.attachments && !email.attachments.length ) return callback(null, email);
+	
+	// Clean up any text inline image tags
+	email.text = email.text.replace(/(\[data:image(.*?)\]|\[cid:(.*?)\])/g, '');
+	email.html = email.html.replace(/(\[data:image(.*?)\]|\[cid:(.*?)\])/g, '');
+
+	// Get cid settings
+	var _cid = plugin.cfg.attachments.cid || 'cid';
+	
 	// if we should leave inline images as cid values
 	if ( _cid === 'cid' ) {
 		// Return
 		return callback(null, email);
 	}
-	// Clean up any text inline image tags
-	// email.text = email.text.replace(/\[data:image(.*?)\]/g, '');
-	// email.html = email.html.replace(/\[data:image(.*?)\]/g, '');
-	// email.text = email.text.replace(/\[cid:(.*?)\]/g, '');
-	// email.html = email.html.replace(/\[cid:(.*?)\]/g, '');
+	
 	// Path to attachments dir
 	var _attachments_folder_path = plugin.cfg.attachments.path;
-	// Get cid settings
-	var _cid = plugin.cfg.attachments.cid || 'cid';
 
-	// plugin.loginfo('--------------------------------------');
-	// plugin.loginfo('checkInlineImages');
-	// plugin.loginfo('email.attachments : ', email.attachments);
-	// plugin.loginfo('CID setting : ', _cid);
-	// plugin.loginfo('--------------------------------------');
+	plugin.loginfo('--------------------------------------');
+	plugin.loginfo('checkInlineImages');
+	plugin.loginfo('email : ', email.html);
+	plugin.loginfo('--------------------------------------');
 
 	// Loop over attachments
 	email.attachments.forEach(function(attachment) {
