@@ -1,3 +1,9 @@
+# 1.6.1 - 2020-08-27
+
+- We now block harmful attachments by default (you can adjust which files should be rejected in the config)
+- We now check the content Type of the file and change the extension if it differs
+- Updated libraries
+
 # 1.5.8 && 1.5.9 && 1.6.0 - 2020-06-26
 
 - Fixed an issue with inline images which were not parsed properly anymore as of 1.5.7

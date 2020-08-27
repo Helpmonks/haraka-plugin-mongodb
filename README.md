@@ -59,7 +59,10 @@ Provide the absolute path to store attachments.
 
 ### Attachment path check (new as of 1.5.5)
 This plugin comes now with a built-in check to make sure your attachment path is always available. To do so, set the "path_check" variable. This is useful if you mount your attachments over Ceph, Gluster, etc. Due to network issues the directory could become unavailable. When this happens, the plugin will tell Haraka to stop.
-**Important**: Do NOT use your attachment directory or else it will scan each attachment. Instead use it's parent folder. The plugin will create a "check" directory with a hidden file in it. 
+**Important**: Do NOT use your attachment directory or else it will scan each attachment. Instead use it's parent folder. The plugin will create a "check" directory with a hidden file in it.
+
+### Attachment reject (new as of 1.6.1)
+Enter the attachments content type that should be rejected. The default ones are the most common file types that should never be accepted by any file system. Feel free to adjust. It's an array with content type strings.
 
 ### Convert inline images (new as of 1.4.0)
 You can set if you want to convert inline images or not. Following options are available:
