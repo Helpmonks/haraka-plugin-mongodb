@@ -12,6 +12,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const S = require('string');
 const watch = require('watch');
+const mime = require('mime');
 const linkify = require('linkify-it')();
 const Iconv = require('iconv').Iconv;
 const simpleParser = require('mailparser').simpleParser;
@@ -656,6 +657,15 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		// plugin.loginfo('related : ', attachment.related);
 		plugin.loginfo('--------------------------------------');
 
+		// Check contentype and check blocked attachments
+		if (attachment.contentType) {
+			// Filter out if type is on the reject list
+			if ( plugin.cfg.attachments.reject && plugin.cfg.attachments.reject.length && plugin.cfg.attachments.reject.includes(attachment.contentType) ) {
+				_attachments = _attachments.filter(a => a.checksum !== attachment.checksum);
+				return each_callback();
+			}
+		}
+
 		// Path to attachments dir
 		var attachments_folder_path = plugin.cfg.attachments.path;
 		// plugin.loginfo('attachments_folder_path : ', attachments_folder_path);
@@ -688,10 +698,8 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		// If filename is attachment.txt
 		if (attachment.fileName === 'attachment.txt' && attachment.contentType && attachment.contentType.includes('/') ) {
 			// Get ext from contenttype
-			var _ext = attachment.contentType.split('/');
 			try {
-				_ext = _ext[1];
-				_ext = _ext.length > 4 ? 'txt' : _ext;
+				var _ext = mime.getExtension(attachment.contentType);
 				attachment.fileName = `attachment.${_ext}`;
 				attachment.generatedFileName = attachment.fileName;
 			} catch(e) {
@@ -706,6 +714,21 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			attachment.generatedFileName = _file_names.generated_file_name;
 		}
 
+		// Set extension based on content type
+		if (attachment.contentType) {
+			// Split up filename
+			let _fn_split = attachment.generatedFileName.split('.');
+			// Get extension
+			let _fn_ext = mime.getExtension(attachment.contentType) || 'txt';
+			// Get filename
+			let _fn = _fn_split[0];
+			// Add it together
+			let _fn_final = _fn + '.' + _fn_ext;
+			// Create attachment object
+			attachment.fileName = _fn_final;
+			attachment.generatedFileName = _fn_final;
+		}
+
 		// if generatedFileName is longer than 200
 		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
 			// Split up filename
@@ -713,7 +736,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			// Get extension
 			let _fileExt = _filename_new.pop();
 			// Get filename
-			let _filename_pop = _filename_new.pop();
+			let _filename_pop = _filename_new[0];
 			// Just in case filename is longer than 200 chars we make sure to take from the left
 			let _filename_200 = S(_filename_pop).left(200).s;
 			// Add it together
