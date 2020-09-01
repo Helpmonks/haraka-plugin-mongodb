@@ -1,3 +1,8 @@
+# 1.6.2 - 2020-08-27
+
+- Added custom content type to extend what attachments Haraka should accept as valid files. Otherwise the attachment is renamed to (filename).txt
+- 
+
 # 1.6.1 - 2020-08-27
 
 - We now block harmful attachments by default (you can adjust which files should be rejected in the config)

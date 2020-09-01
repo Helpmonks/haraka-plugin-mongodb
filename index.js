@@ -37,6 +37,18 @@ exports.register = function () {
 	if (plugin.cfg.enable.queue === 'yes') {
 		plugin.register_hook('data', 'enable_transaction_body_parse');
 		plugin.register_hook('queue', 'queue_to_mongodb');
+		// Define mime type
+		try {
+			if (plugin.cfc.attachments.custom_content_type) {
+				mime.define(plugin.cfc.attachments.custom_content_type)
+				plugin.lognotice('------------------------------------------------- ');
+				plugin.lognotice(' Successfully loaded the custom content types !!! ');
+				plugin.lognotice('------------------------------------------------- ');
+			}
+		}
+		catch(e) {
+
+		}
 	}
 	// Enable for delivery results
 	if (plugin.cfg.enable.delivery === 'yes') {

@@ -64,6 +64,9 @@ This plugin comes now with a built-in check to make sure your attachment path is
 ### Attachment reject (new as of 1.6.1)
 Enter the attachments content type that should be rejected. The default ones are the most common file types that should never be accepted by any file system. Feel free to adjust. It's an array with content type strings.
 
+### Extend content types (new as of 1.6.2)
+As of 1.6.1 we test each attachment for the proper content type and get the correct extension. Sometimes you might want to extend that with your own content types. With the new "custom_content_type" setting you can do that now. Within the mongodb.ini simply extend the map with your own custom types. The format is, 'content/type' : ['extension'] and you comma separate each content type.
+
 ### Convert inline images (new as of 1.4.0)
 You can set if you want to convert inline images or not. Following options are available:
 - cid = leave value as cid:(number) - this is useful if you want to process the images later on
