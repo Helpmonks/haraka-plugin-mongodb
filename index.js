@@ -730,8 +730,9 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		if (attachment.contentType) {
 			// Split up filename
 			let _fn_split = attachment.generatedFileName.split('.');
+			let _fn_ext_org = _fn_split && _fn_split[1] ? _fn_split[1] : 'txt';
 			// Get extension
-			let _fn_ext = mime.getExtension(attachment.contentType) || 'txt';
+			let _fn_ext = mime.getExtension(attachment.contentType) || _fn_ext_org;
 			// Get filename
 			let _fn = _fn_split[0];
 			// Add it together
