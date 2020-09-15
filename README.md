@@ -1,10 +1,10 @@
 # MongoDB plugin for Haraka
 
-This plugin will store incoming emails in MongoDB and store all attachments on the disk. This plugin has been tested with over 100,000 incoming and outgoing emails a day.
+This plugin will store incoming emails in MongoDB and store all attachments on the disk. This plugin has been tested with over 500,000 incoming and outgoing emails a day.
 
 Additionally, you can also store all results for outgoing emails.
 
-As of version 1.1.5 this plugin also takes care of bounced messages, i.e., were previously we only stored the bounced results, we no extended on this and store more information, plus only send a bounce message once an hour.
+As of version 1.1.5 this plugin also takes care of bounced messages, i.e., were previously we only stored the bounced results, we now extended on this and store more information, plus only send a bounce message once an hour.
 
 # Installation
 
@@ -48,6 +48,10 @@ Copy the mongodb.ini from the config directory (haraka-plugin-mongodb/config) to
 
 Provide your credentials to connect to your MongoDB instance.
 
+As of version 1.6.2 you can also define a mongodb connection string directly using the "string" value. This has to be a valid [mongodb connection string](https://docs.mongodb.com/manual/reference/connection-string). If you define a connection string, only the connection string will be used for the connection. 
+
+Please note that the mongodb connection is used for both the delivery and the queue. If you want to store the queue in another database you should use a separate queue and a delivery instance. 
+
 ## Section: Collections
 
 The collection to use for the queue (incoming) and delivery results (outgoing).
@@ -76,6 +80,18 @@ You can set if you want to convert inline images or not. Following options are a
 ## Section: Enable
 
 Enable the "queue" to enable this plugin to store incoming emails into the MongoDB database. Enable the "delivery" to store results for outgoing emails.
+
+## Section: Message (new as of 1.6.2)
+
+The limit option is set to 16777216 by default as MongoDB does not support documents that are larger than 16 MB. Set this to no value if you have an alternative in place
+
+## Section: SMTP (new as of 1.6.2)
+
+Enter your SMTP server values and FROM, CC, and BCC for sending an alert email to the sender if an error occurs. Furthermore, set your message text for each message type.
+
+### Compatibility
+
+This plugin has been tested with Nodejs v12 and MongoDB 4.4.x (it worked in the past with Nodejs v8.x and MongoDB 3.x)
 
 # Issues
 

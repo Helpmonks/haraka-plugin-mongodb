@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/haraka/haraka-plugin-mongodb#readme",
   "dependencies": {
-    "async": "^2.6.3",
+    "async": "^3.2.0",
     "decode-html": "^2",
     "detect-character-encoding": "^0.8.0",
     "fs-extra": "^9",
@@ -38,13 +38,14 @@
     "mailparser": "^2.8.1",
     "mailsplit": "^4.6.4",
     "mime": "^2.4.6",
-    "moment": "^2.27.0",
-    "mongodb": "^3.6.0",
-    "node-gyp": "^6.1.0",
+    "moment": "^2.28.0",
+    "mongodb": "^3.6.2",
+    "node-gyp": "^7.1.0",
+    "nodemailer": "^6.4.11",
     "quoted-printable": "^1.0.1",
     "string": "^3.3.3",
     "tlds": "^1.209.0",
-    "uuid": "^3.4.0",
+    "uuid": "^8.3.0",
     "watch": "^1.0.2"
   },
   "devDependencies": {
