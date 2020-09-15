@@ -1,3 +1,16 @@
+# 1.6.2 - 2020-09-14
+
+- You can now use a mongodb:// connection string with the new string value
+- There is now a new "limit" option as you cannot insert more that 16 MB documents into MongoDB
+- You can now send back emails to the sender on limits, parsing, and insert errors 
+- Improved performance for parsing inline images
+- Added custom content type to extend what attachments Haraka should accept as valid files. Otherwise the attachment is renamed to (filename).txt
+- Removed some content types from the default reject string
+- The log shows you now the connection to the MongoDB instance and depending on what you use a different wording for the connection
+- Emails with headers that contain "." are now inserted (previously those emails failed)
+- Updated libraries
+
+
 # 1.6.1 - 2020-08-27
 
 - We now block harmful attachments by default (you can adjust which files should be rejected in the config)

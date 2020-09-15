@@ -6,7 +6,7 @@
 const mongoc = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 const async = require('async');
-const uuid = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const fs = require('fs-extra');
 const path = require('path');
@@ -17,6 +17,7 @@ const linkify = require('linkify-it')();
 const Iconv = require('iconv').Iconv;
 const simpleParser = require('mailparser').simpleParser;
 const exec = require('child_process').exec;
+const nodemailer = require('nodemailer');
 
 const EmailBodyUtility = require('./email_body_utility');
 
@@ -37,6 +38,18 @@ exports.register = function () {
 	if (plugin.cfg.enable.queue === 'yes') {
 		plugin.register_hook('data', 'enable_transaction_body_parse');
 		plugin.register_hook('queue', 'queue_to_mongodb');
+		// Define mime type
+		try {
+			if (plugin.cfc.attachments.custom_content_type) {
+				mime.define(plugin.cfc.attachments.custom_content_type)
+				plugin.lognotice('------------------------------------------------- ');
+				plugin.lognotice(' Successfully loaded the custom content types !!! ');
+				plugin.lognotice('------------------------------------------------- ');
+			}
+		}
+		catch(e) {
+
+		}
 	}
 	// Enable for delivery results
 	if (plugin.cfg.enable.delivery === 'yes') {
@@ -69,11 +82,17 @@ exports.initialize_mongodb = function (next, server) {
 
 	// Only connect if there is no server.notes.mongodb already
 	if ( ! server.notes.mongodb ) {
-		connectionString = 'mongodb://';
-		if (plugin.cfg.mongodb.user && plugin.cfg.mongodb.pass) {
-			connectionString += `${encodeURIComponent(plugin.cfg.mongodb.user)}:${encodeURIComponent(plugin.cfg.mongodb.pass)}@`;
+		
+		if (plugin.cfg.mongodb.string) {
+			connectionString = plugin.cfg.mongodb.string;
 		}
-		connectionString += `${plugin.cfg.mongodb.host}:${plugin.cfg.mongodb.port}/${plugin.cfg.mongodb.db}`;
+		else {
+			connectionString = 'mongodb://';
+			if (plugin.cfg.mongodb.user && plugin.cfg.mongodb.pass) {
+				connectionString += `${encodeURIComponent(plugin.cfg.mongodb.user)}:${encodeURIComponent(plugin.cfg.mongodb.pass)}@`;
+			}
+			connectionString += `${plugin.cfg.mongodb.host}:${plugin.cfg.mongodb.port}/${plugin.cfg.mongodb.db}`;
+		}
 
 		mongoc.connect(connectionString, { 'useNewUrlParser': true, 'keepAlive': true, 'connectTimeoutMS': 0, 'socketTimeoutMS': 0 }, function(err, client) {
 			if (err) {
@@ -86,9 +105,19 @@ exports.initialize_mongodb = function (next, server) {
 			// plugin.lognotice('server.notes.mongodb : ', server.notes.mongodb);
 			plugin.lognotice('-------------------------------------- ');
 			plugin.lognotice(' Successfully connected to MongoDB !!! ');
+			plugin.lognotice(` with: ${connectionString} `);
 			plugin.lognotice('-------------------------------------- ');
-			plugin.lognotice('   Waiting for emails to arrive !!!    ');
-			plugin.lognotice('-------------------------------------- ');
+			
+			if (plugin.cfg.enable.queue === 'yes') {
+				plugin.lognotice('-------------------------------------- ');
+				plugin.lognotice('   Waiting for emails to arrive !!!    ');
+				plugin.lognotice('-------------------------------------- ');
+			}
+			if (plugin.cfg.enable.delivery === 'yes') {
+				plugin.lognotice('-------------------------------------- ');
+				plugin.lognotice('   Waiting for emails to be sent !!!    ');
+				plugin.lognotice('-------------------------------------- ');
+			}
 			// Initiate a watch on the attachment path
 			_checkAttachmentPaths(plugin);
 			next();
@@ -104,7 +133,6 @@ exports.initialize_mongodb = function (next, server) {
 // QUEUE
 // ------------------
 
-
 // Hook for data
 exports.enable_transaction_body_parse = function(next, connection) {
 	connection.transaction.parse_body = true;
@@ -116,6 +144,23 @@ exports.queue_to_mongodb = function(next, connection) {
 
 	var plugin = this;
 	var body = connection.transaction.body;
+
+	var _size = connection && connection.transaction ? connection.transaction.data_bytes : null;
+
+	// plugin.lognotice(`====================== SIZE: ${_size}`)
+
+	// If we have a size check if there is a message size limit
+	if (_size && plugin.cfg.message && plugin.cfg.message.limit) {
+		// If message is bigger than limit
+		if ( _size > parseInt(plugin.cfg.message.limit) ) {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror(' Message size is too large. Sending back an error. Size is: ', _size);
+			plugin.logerror('--------------------------------------');
+			var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
+			_sendMessageBack('limit', plugin, _header);
+			return next(OK);
+		}
+	}
 
 	var _body_html;
 	var _body_text;
@@ -164,6 +209,8 @@ exports.queue_to_mongodb = function(next, connection) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror(`Error parsing email: `, error.message);
 			plugin.logerror('--------------------------------------');
+			var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
+			_sendMessageBack('parsing', plugin, _header, error);
 			return next(DENYSOFT, "storage error");
 		}
 
@@ -209,11 +256,15 @@ exports.queue_to_mongodb = function(next, connection) {
 		// plugin.lognotice(' server.notes.mongodb : ', server.notes.mongodb);
 		// plugin.lognotice('--------------------------------------');
 
-		server.notes.mongodb.collection(plugin.cfg.collections.queue).insert(_email, function(err) {
+		server.notes.mongodb.collection(plugin.cfg.collections.queue).insertOne(_email, { checkKeys : false }, function(err) {
 			if (err) {
 				plugin.logerror('--------------------------------------');
 				plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
 				plugin.logerror('--------------------------------------');
+				// Send error
+				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
+				_sendMessageBack('insert', plugin, _header, err);
+				// Return
 				next(DENYSOFT, "storage error");
 			} else {
 				plugin.lognotice('--------------------------------------');
@@ -407,144 +458,76 @@ exports.shutdown = function() {
 // INTERNAL FUNCTIONS
 // ------------------
 
+function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
+	// plugin.lognotice(`Email param: ${email_headers}`)
+	// Check for host
+	if (plugin.cfg.smtp && !plugin.cfg.smtp.host) return;
+	if (!email_headers) return;
+	// Error object
+	error_object = error_object || null;
+	// Get SMTP object
+	var _smtp_options = _createSmtpObject(plugin);
+	var _smtpTransport = nodemailer.createTransport(_smtp_options);
+	// Get reply address
+	var _to = email_headers.headers_decoded['reply-to'] || email_headers.headers_decoded.from || email_headers.headers.mail_from && email_headers.headers.mail_from.original || null;
+	// if to is null abort
+	if (_to) return;
+	// Text
+	var _text;
+	// Text depending on msg_type
+	switch(msg_type) {
+		case 'limit':
+			_text = plugin.cfg.smtp.msg_limit;
+			break;
+		case 'insert':
+			_text = plugin.cfg.smtp.msg_error_insert;
+			break;
+		case 'parsing':
+			_text = plugin.cfg.smtp.msg_error_parsing;
+			break;
+	}
+	// Error text
+	var _text_error = error_object ? '\n\n' + error_object : '';
+	// Mail options
+	var _mail_options = {
+		'from' : plugin.cfg.smtp.from,
+		'to' : _to,
+		'cc' : plugin.cfg.smtp.cc || null,
+		'bcc' : plugin.cfg.smtp.bcc || null,
+		'subject' : 'Message not delivered ' + email_headers.header_list[0]['Message-ID'],
+		'text' : `${moment().format('long')}\n${_text}${_text_error}\n\nBelow is the raw header for your investigation:\n${email_headers.header_list[0]}`
+	}
+	// Send message
+	plugin.lognotice("_mail_options", _mail_options);
+	_smtpTransport.sendMail(_mail_options, function (error, response) {
+		plugin.lognotice("error", error);
+		plugin.lognotice("response", response);
+		smtpTransport.close();
+	});
+}
 
-// function _getHtmlAndTextBody(email_obj, body) {
-
-// 	var html_info = _extractBody(email_obj, body)
-// 	var text_info = _extractBody(email_obj, body, _default_text_field_order);
-
-// 	// override any html mailparser result we have if there's text result
-// 	if (! html_info.result || (text_info.result && html_info.source.includes('mailparser'))) {
-// 		html_info.result = _convertPlainTextToHtml(text_info.result);
-// 		html_info.source = text_info.source;
-// 	}
-
-// 	return {
-// 		'html' : html_info.result,
-// 		'text' : text_info.result,
-// 		'html_source' : html_info.source,
-// 		'text_source' :text_info.source
-// 	};
-// }
-
-// const _default_html_field_order = 'bodytext_html mailparser_html mailparser_text_as_html'.split(' ');
-// const _default_text_field_order = 'bodytext_plain mailparser_text'.split(' ');
-
-// function _extractBody(email_obj, body, field_order = _default_html_field_order) {
-
-// 	// source can be bodytext_html, bodytext_plain, mailparser_html, mailparser_text_as_html, mail_parser_text
-// 	var source = 'none';
-// 	var result = '';
-
-// 	var i = 0;
-// 	while (! result && i < field_order.length) {
-// 		var field = field_order[i++];
-// 		result = getBodyByField(email_obj, body, field);
-// 		// if we have a result then set the source
-// 		source = result ? field : source;
-// 	}
-
-// 	return { result, source };
-
-// 	///////////////////////////////////////////////
-
-// 	function getBodyTextFromChildren(haraka_obj, type = 'text/html', depth = 0, index = 0) {
-
-// 		const _log_func = false;
-
-// 		_log_func && console.log(`${'\t'.repeat(depth)} [${index}] looking for type '${type}', current node is '${haraka_obj.ct}' at depth '${depth}'`);
-// 		const is_requested_type = haraka_obj.ct && haraka_obj.ct.includes(type);
-
-// 		if (haraka_obj.bodytext && is_requested_type) {
-// 			_log_func && console.log(`${'\t'.repeat(depth)} [${index}] found bodytype of length '${haraka_obj.bodytext.length}' for type '${type}'`);
-// 			return haraka_obj.bodytext;
-// 		}
-
-// 		if (! haraka_obj.children || ! haraka_obj.children.length) {
-// 			_log_func && console.log(`${'\t'.repeat(depth)} [${index}] no children at current node of depth '${depth}', sending back an empty string`);
-// 			return '';
-// 		}
-
-// 		const num_children = haraka_obj.children.length;
-
-// 		_log_func && console.log(`${'\t'.repeat(depth)} [${index}] node has ${num_children} children to be checked until a result of type '${type}' is found`);
-
-// 		var childs_body_text = null;
-// 		var i = 0;
-// 		// take the text from the first child that has it
-// 		while (! childs_body_text && i < num_children) {
-// 			childs_body_text = getBodyTextFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
-// 		}
-
-// 		return childs_body_text.trim() || '';
-// 	}
-
-// 	function getBodyByField(email_obj, body, field) {
-
-// 		switch (field) {
-
-// 			case 'bodytext_html':
-// 				return getBodyTextFromChildren(body);
-
-// 			case 'bodytext_plain':
-// 				return getBodyTextFromChildren(body, 'text/plain');
-
-// 			case 'mailparser_html':
-// 				return email_obj.html || '';
-
-// 			case 'mailparser_text_as_html':
-// 				return email_obj.textAsHtml || '';
-
-// 			case 'mailparser_text' :
-// 				return email_obj.text || '';
-
-// 			default:
-// 				console.log(`unknown field type requested for body field: '${field}'`);
-// 				return '';
-// 		}
-// 	}
-// }
-
-// function _convertPlainTextToHtml(text) {
-
-// 	if (! text) { return text; }
-
-// 	// use linkify to convert any links to <a>
-// 	var words = text.split(' ');
-
-// 	words = words.map((w) => {
-// 		// if there're no links return w as is
-// 		if (! linkify.test(w)) { return w; }
-
-// 		var matches = linkify.match(w);
-
-// 		// loop through the matches backwards so that the matches' indexes remain unchanged throughout the changes
-// 		for (var i = matches.length -1; i >= 0; i--) {
-// 			var m = matches[i];
-// 			w = `${w.substring(0, m.index)}<a href="${m.url}" target="_blank">${m.text}</a>${w.substring(m.lastIndex)}`;
-// 		}
-
-// 		return w.trim();
-// 	});
-
-// 	var text_as_html = `<p>${words.join(' ')}</p>`;
-
-// 	text_as_html = text_as_html.replace(/\r?\n/g, '\n');
-// 	text_as_html = text_as_html.replace(/[ \t]+$/gm, '');
-// 	text_as_html = text_as_html.replace(/\n\n+/gm, '</p><p>');
-// 	text_as_html = text_as_html.replace(/\n/g, '<br/>').trim();
-
-// 	// remove any starting and trailing empty paragraphs
-// 	while (! text_as_html.indexOf('<p></p>')) {
-// 		text_as_html = text_as_html.substring('<p></p>'.length).trim();
-// 	}
-
-// 	while (text_as_html.substring(text_as_html.length - '<p></p>'.length) === '<p></p>') {
-// 		text_as_html = text_as_html.substring(0, text_as_html.length - '<p></p>'.length).trim();
-// 	}
-
-// 	return text_as_html;
-// }
+// Create SMTP object for sending
+function _createSmtpObject(plugin) {
+	var _smtp = {
+		'host' : plugin.cfg.smtp.host,
+		'secure' : plugin.cfg.smtp.ssl === 'yes' ? true : false,
+		'port' : plugin.cfg.smtp.port,
+		'auth' : {
+			'user' : plugin.cfg.smtp.user,
+			'pass' : plugin.cfg.smtp.pass
+		},
+		'pool' : true,
+		'maxMessages' : 'Infinity',
+		'maxConnections' : 5,
+		'connectionTimeout' : 60000,
+		'greetingTimeout' : 60000,
+		'tls' : plugin.cfg.smtp.tls === 'yes' ? {
+			ciphers : 'SSLv3',
+			rejectUnauthorized: false
+		} : { rejectUnauthorized: false }
+	};
+	return _smtp;
+};
 
 
 // Add to delivery log
@@ -553,7 +536,7 @@ function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
 	// if (!plugin_object || !plugin_object.cfc || plugin_object.cfg.collections) return callback && callback(null);
 	// if (!conn || !conn.collection) return callback && callback(null);
 	// Save
-	conn.collection(plugin_object.cfg.collections.delivery).insert(data_object, function(err) {
+	conn.collection(plugin_object.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
 		if (err) {
 			plugin_object.logerror('--------------------------------------');
 			plugin_object.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
@@ -592,7 +575,11 @@ function parseSubaddress(user) {
 }
 
 function _mp(plugin, connection, cb) {
-	simpleParser(connection.transaction.message_stream, { Iconv, 'skipImageLinks' : true }, (error, mail) => {
+	// Options
+	var _options = { Iconv, 'skipImageLinks' : true };
+	if (plugin.cfg.message && plugin.cfg.message.limit) _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
+	// Parse
+	simpleParser(connection.transaction.message_stream, _options, (error, mail) => {
 		if ( mail && mail.attachments ) {
 			_storeAttachments(connection, plugin, mail.attachments, mail, function(error, mail_object) {
 				return cb(error, mail_object);
@@ -672,7 +659,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 		// if there's no checksum for the attachment then generate our own uuid
 		// attachment.checksum = attachment.checksum || uuid.v4();
-		var attachment_checksum = attachment.checksum || uuid.v4();
+		var attachment_checksum = attachment.checksum || uuidv4();
 		// plugin.loginfo('Begin storing attachment : ', attachment.checksum, attachment_checksum);
 
 		// Size is in another field in 2.x
@@ -700,8 +687,10 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			// Get ext from contenttype
 			try {
 				var _ext = mime.getExtension(attachment.contentType);
-				attachment.fileName = `attachment.${_ext}`;
-				attachment.generatedFileName = attachment.fileName;
+				if (_ext) {
+					attachment.fileName = `attachment.${_ext}`;
+					attachment.generatedFileName = attachment.fileName;
+				}
 			} catch(e) {
 				plugin.loginfo('Not able to parse extension from contenttype')
 			}
@@ -715,19 +704,20 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		}
 
 		// Set extension based on content type
-		if (attachment.contentType) {
-			// Split up filename
-			let _fn_split = attachment.generatedFileName.split('.');
-			// Get extension
-			let _fn_ext = mime.getExtension(attachment.contentType) || 'txt';
-			// Get filename
-			let _fn = _fn_split[0];
-			// Add it together
-			let _fn_final = _fn + '.' + _fn_ext;
-			// Create attachment object
-			attachment.fileName = _fn_final;
-			attachment.generatedFileName = _fn_final;
-		}
+		// if (attachment.contentType) {
+		// 	// Split up filename
+		// 	let _fn_split = attachment.generatedFileName.split('.');
+		// 	let _fn_ext_org = _fn_split && _fn_split[1] ? _fn_split[1] : 'txt';
+		// 	// Get extension
+		// 	let _fn_ext = mime.getExtension(attachment.contentType) || _fn_ext_org;
+		// 	// Get filename
+		// 	let _fn = _fn_split[0];
+		// 	// Add it together
+		// 	let _fn_final = _fn + '.' + _fn_ext;
+		// 	// Create attachment object
+		// 	attachment.fileName = _fn_final;
+		// 	attachment.generatedFileName = _fn_final;
+		// }
 
 		// if generatedFileName is longer than 200
 		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
@@ -874,8 +864,8 @@ function _checkInlineImages(plugin, email, callback) {
 	if ( email.attachments && !email.attachments.length ) return callback(null, email);
 	
 	// Clean up any text inline image tags
-	email.text = email.text.replace(/(\[data:image(.*?)\]|\[cid:(.*?)\])/g, '');
-	email.html = email.html.replace(/(\[data:image(.*?)\]|\[cid:(.*?)\])/g, '');
+	// email.text = email.text.replace(/(\[data:image(.*?)\]|\[cid:(.*?)\])/g, '');
+	// email.html = email.html.replace(/(\[data:image(.*?)\]|\[cid:(.*?)\])/g, '');
 
 	// Get cid settings
 	var _cid = plugin.cfg.attachments.cid || 'cid';
