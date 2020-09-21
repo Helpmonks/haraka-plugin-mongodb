@@ -682,11 +682,17 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			attachment.generatedFileName = 'invite.ics';
 		}
 
+		// For delivery messages
+		if ( attachment.contentType && attachment.contentType === 'message/delivery-status' ) {
+			attachment.fileName = 'delivery_status.txt';
+			attachment.generatedFileName = 'delivery_status.txt';
+		}
+
 		// If filename is attachment.txt
 		if (attachment.fileName === 'attachment.txt' && attachment.contentType && attachment.contentType.includes('/') ) {
 			// Get ext from contenttype
 			try {
-				var _ext = mime.getExtension(attachment.contentType);
+				var _ext = attachment.contentType.indexOf('rfc822') === -1 ? mime.getExtension(attachment.contentType) : 'eml';
 				if (_ext) {
 					attachment.fileName = `attachment.${_ext}`;
 					attachment.generatedFileName = attachment.fileName;
@@ -703,34 +709,33 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			attachment.generatedFileName = _file_names.generated_file_name;
 		}
 
+		// Split up filename
+		var _fn_split = attachment.fileName.split('.');
+		var _is_invalid = _fn_split && _fn_split[1] === 'undefined' || _fn_split.length === 1 ? true : false;
+
 		// Set extension based on content type
-		// if (attachment.contentType) {
-		// 	// Split up filename
-		// 	let _fn_split = attachment.generatedFileName.split('.');
-		// 	let _fn_ext_org = _fn_split && _fn_split[1] ? _fn_split[1] : 'txt';
-		// 	// Get extension
-		// 	let _fn_ext = mime.getExtension(attachment.contentType) || _fn_ext_org;
-		// 	// Get filename
-		// 	let _fn = _fn_split[0];
-		// 	// Add it together
-		// 	let _fn_final = _fn + '.' + _fn_ext;
-		// 	// Create attachment object
-		// 	attachment.fileName = _fn_final;
-		// 	attachment.generatedFileName = _fn_final;
-		// }
+		if (attachment.contentType && _is_invalid) {
+			// Get extension
+			var _fn_ext = mime.getExtension(attachment.contentType);
+			// Add it together
+			var _fn_final = _fn_split[0] + '.' + _fn_ext;
+			// Create attachment object
+			attachment.fileName = _fn_final;
+			attachment.generatedFileName = _fn_final;
+		}
 
 		// if generatedFileName is longer than 200
 		if (attachment.generatedFileName && attachment.generatedFileName.length > 200) {
 			// Split up filename
-			let _filename_new = attachment.generatedFileName.split('.');
+			var _filename_new = attachment.generatedFileName.split('.');
 			// Get extension
-			let _fileExt = _filename_new.pop();
+			var _fileExt = _filename_new.pop();
 			// Get filename
-			let _filename_pop = _filename_new[0];
+			var _filename_pop = _filename_new[0];
 			// Just in case filename is longer than 200 chars we make sure to take from the left
-			let _filename_200 = S(_filename_pop).left(200).s;
+			var _filename_200 = S(_filename_pop).left(200).s;
 			// Add it together
-			let _final = _filename_200 + '.' + _fileExt;
+			var _final = _filename_200 + '.' + _fileExt;
 			// Create attachment object
 			attachment.fileName = _final;
 			attachment.generatedFileName = _final;
