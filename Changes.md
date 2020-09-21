@@ -1,3 +1,9 @@
+# 1.6.3 - 2020-09-21
+
+- Enhanced attachment parsing for checking the proper extension
+- EML messages with different content type are getting the extension EML properly
+- Delivery reports are automatically being renamed so they show up properly
+
 # 1.6.2 - 2020-09-14
 
 - You can now use a mongodb:// connection string with the new string value
