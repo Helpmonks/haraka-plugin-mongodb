@@ -1,3 +1,14 @@
+# 1.6.4 - 2020-09-22
+
+- If there is an error upon saving the email to MongoDB, we now try to save again, but without the "raw" and "haraka_body" values (they are redundant anyway). This prevents some errors we have seen with "offset out of range".
+- You can now store a comma separated email list for CC and BB in the new error sending code which was introduced in 1.6.2
+- The size limit code was further enhanced as it now removes the "raw" and "haraka_body" values first (they are redundant anyway) and the calculates the size again. If the 16MB limit is hit, it will send out an error email
+- Added the entire header object to the error email body
+- Fixed an issue with the error email not being sent
+- Fixed an issue which prevented sending the error email
+- Fixed an issue with the error email not showing the message-id properly
+- Fixed an issue with returning the proper error code when there is an error with the size
+
 # 1.6.3 - 2020-09-21
 
 - Enhanced attachment parsing for checking the proper extension

@@ -147,20 +147,6 @@ exports.queue_to_mongodb = function(next, connection) {
 
 	var _size = connection && connection.transaction ? connection.transaction.data_bytes : null;
 
-	// plugin.lognotice(`====================== SIZE: ${_size}`)
-
-	// If we have a size check if there is a message size limit
-	if (_size && plugin.cfg.message && plugin.cfg.message.limit) {
-		// If message is bigger than limit
-		if ( _size > parseInt(plugin.cfg.message.limit) ) {
-			plugin.logerror('--------------------------------------');
-			plugin.logerror(' Message size is too large. Sending back an error. Size is: ', _size);
-			plugin.logerror('--------------------------------------');
-			var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
-			_sendMessageBack('limit', plugin, _header);
-			return next(OK);
-		}
-	}
 
 	var _body_html;
 	var _body_text;
@@ -205,6 +191,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		}
 	],
 	function (error, email_object) {
+
 		if (error) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror(`Error parsing email: `, error.message);
@@ -214,14 +201,25 @@ exports.queue_to_mongodb = function(next, connection) {
 			return next(DENYSOFT, "storage error");
 		}
 
+		// By default we store the haraka body and the whole email object
+		var _store_raw = true;
+
+		// If we have a size limit
+		if (_size && plugin.cfg.message && plugin.cfg.message.limit) {
+			// If message is bigger than limit
+			if ( _size > parseInt(plugin.cfg.message.limit) ) {
+				_store_raw = false;
+			}
+		}
+
 		var _now = new Date();
 
 		// Mail object
 		var _email = {
-			'haraka_body': body ? body : null,
+			'haraka_body': _store_raw && body ? body : null,
 			'raw_html': _body_html,
 			'raw_text': _body_text,
-			'raw': email_object,
+			'raw': _store_raw ? email_object : null,
 			'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
 			'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,
 			'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
@@ -250,23 +248,48 @@ exports.queue_to_mongodb = function(next, connection) {
 			'extracted_text_from': email_object.extracted_text_from
 		};
 
-		// plugin.lognotice('--------------------------------------');
-		// plugin.lognotice(' Server notes !!! ');
-		// plugin.lognotice(' server.notes : ', server.notes);
-		// plugin.lognotice(' server.notes.mongodb : ', server.notes.mongodb);
-		// plugin.lognotice('--------------------------------------');
+		// If we have a size limit
+		if (plugin.cfg.message && plugin.cfg.message.limit) {
+			// Get size of email object
+			var _size_email_obj = JSON.stringify(_email).length;
+			// If message is bigger than limit
+			if ( _size_email_obj > parseInt(plugin.cfg.message.limit) ) {
+				plugin.logerror('--------------------------------------');
+				plugin.logerror(' Message size is too large. Sending back an error. Size is: ', _size);
+				plugin.logerror('--------------------------------------');
+				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
+				_sendMessageBack('limit', plugin, _header);
+				return next(DENYSOFT, "storage error");
+			}
+		}
 
+		// Add to db
 		server.notes.mongodb.collection(plugin.cfg.collections.queue).insertOne(_email, { checkKeys : false }, function(err) {
 			if (err) {
-				plugin.logerror('--------------------------------------');
-				plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
-				plugin.logerror('--------------------------------------');
-				// Send error
-				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
-				_sendMessageBack('insert', plugin, _header, err);
-				// Return
-				next(DENYSOFT, "storage error");
-			} else {
+				// Remove the large fields and try again
+				delete _email.haraka_body;
+				delete _email.raw;
+				// Let's try again
+				server.notes.mongodb.collection(plugin.cfg.collections.queue).insertOne(_email, { checkKeys : false }, function(err) {
+					if (err) {
+						plugin.logerror('--------------------------------------');
+						plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
+						plugin.logerror('--------------------------------------');
+						// Send error
+						var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
+						_sendMessageBack('insert', plugin, _header, err);
+						// Return
+						next(DENYSOFT, "storage error");
+					}
+					else {
+						plugin.lognotice('--------------------------------------');
+						plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
+						plugin.lognotice('--------------------------------------');
+						next(OK);
+					}
+				})
+			}
+			else {
 				plugin.lognotice('--------------------------------------');
 				plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
 				plugin.lognotice('--------------------------------------');
@@ -378,7 +401,7 @@ exports.bounced_email = function(next, hmail, error) {
 	server.notes.mongodb.collection(plugin.cfg.collections.delivery).find(_query).toArray(function(err, record) {
 		if (err) {
 			plugin.lognotice('--------------------------------------');
-			plugin.lognotice(' Bounced email. Error on find !!! ', err);
+			plugin.lognotice('Error on find for bounced email : ', err);
 			plugin.lognotice('--------------------------------------');
 			return next();
 		}
@@ -459,7 +482,10 @@ exports.shutdown = function() {
 // ------------------
 
 function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
-	// plugin.lognotice(`Email param: ${email_headers}`)
+	// plugin.lognotice(`Email msg_type: ${msg_type}`)
+	// plugin.lognotice(`Email email_headers: ${email_headers}`)
+	// plugin.lognotice(`Email plugin: ${plugin.cfg}`)
+	// plugin.lognotice(`Email plugin smtp: ${plugin.cfg.smtp}`)
 	// Check for host
 	if (plugin.cfg.smtp && !plugin.cfg.smtp.host) return;
 	if (!email_headers) return;
@@ -471,7 +497,7 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	// Get reply address
 	var _to = email_headers.headers_decoded['reply-to'] || email_headers.headers_decoded.from || email_headers.headers.mail_from && email_headers.headers.mail_from.original || null;
 	// if to is null abort
-	if (_to) return;
+	if (!_to) return;
 	// Text
 	var _text;
 	// Text depending on msg_type
@@ -488,17 +514,26 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	}
 	// Error text
 	var _text_error = error_object ? '\n\n' + error_object : '';
+	// Message-ID
+	var _message_id = email_headers.headers_decoded && email_headers.headers_decoded['message-id'] || email_headers['message-id'] || email_headers['Message-ID'] || null;
+	// Subject
+	var _subject = email_headers.headers_decoded && email_headers.headers_decoded['subject'] || email_headers.subject || email_headers.Subject || null;
+	// CC / BCC
+	var _cc = plugin.cfg.smtp.cc ? plugin.cfg.smtp.cc.split(',') : [];
+	var _bcc = plugin.cfg.smtp.bcc ? plugin.cfg.smtp.bcc.split(',') : [];
+	// Mailbox
+	var _sent_from = email_headers.headers_decoded.to || email_headers.headers.to || null;
+	if (_sent_from) _cc.push(_sent_from);
 	// Mail options
 	var _mail_options = {
 		'from' : plugin.cfg.smtp.from,
 		'to' : _to,
-		'cc' : plugin.cfg.smtp.cc || null,
-		'bcc' : plugin.cfg.smtp.bcc || null,
-		'subject' : 'Message not delivered ' + email_headers.header_list[0]['Message-ID'],
-		'text' : `${moment().format('long')}\n${_text}${_text_error}\n\nBelow is the raw header for your investigation:\n${email_headers.header_list[0]}`
+		'cc' : _cc,
+		'bcc' : _bcc,
+		'subject' : 'Message with subject: "' + _subject + '" not delivered. ID: ' + _message_id,
+		'text' : `${moment().format('dddd, MMMM Do YYYY, h:mm:ss a Z')}\n\n${_text}${_text_error}\n\nBelow is the raw header for your investigation:\n\n${email_headers}`
 	}
 	// Send message
-	plugin.lognotice("_mail_options", _mail_options);
 	_smtpTransport.sendMail(_mail_options, function (error, response) {
 		plugin.lognotice("error", error);
 		plugin.lognotice("response", response);
@@ -539,7 +574,7 @@ function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
 	conn.collection(plugin_object.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
 		if (err) {
 			plugin_object.logerror('--------------------------------------');
-			plugin_object.logerror('ERROR ON INSERT INTO DELIVERY : ', err);
+			plugin_object.logerror('Error on insert into delivery : ', err);
 			plugin_object.logerror('--------------------------------------');
 			return callback && callback(err);
 		} else {
