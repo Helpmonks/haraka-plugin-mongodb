@@ -198,7 +198,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			plugin.logerror('--------------------------------------');
 			var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 			_sendMessageBack('parsing', plugin, _header, error);
-			return next(DENYSOFT, "storage error");
+			return next(DENY, "Message cannot be parsed");
 		}
 
 		// By default we store the haraka body and the whole email object
@@ -259,7 +259,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.logerror('--------------------------------------');
 				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 				_sendMessageBack('limit', plugin, _header);
-				return next(DENYSOFT, "storage error");
+				return next(DENY, "Message size is too large");
 			}
 		}
 
@@ -279,7 +279,7 @@ exports.queue_to_mongodb = function(next, connection) {
 						var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 						_sendMessageBack('insert', plugin, _header, err);
 						// Return
-						next(DENYSOFT, "storage error");
+						next(DENYSOFT, "Message cannot be stored");
 					}
 					else {
 						plugin.lognotice('--------------------------------------');

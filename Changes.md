@@ -1,3 +1,8 @@
+# 1.6.5 - 2020-09-22
+
+- Returning a "DENY" if the message is larger than 16MB
+- Returning a "DENY" if the message cannot be parsed
+
 # 1.6.4 - 2020-09-22
 
 - If there is an error upon saving the email to MongoDB, we now try to save again, but without the "raw" and "haraka_body" values (they are redundant anyway). This prevents some errors we have seen with "offset out of range".
