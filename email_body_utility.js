@@ -3,7 +3,7 @@ const EmailBodyUtility = function() {
 
 	const async = require('async');
 	const linkify = require('linkify-it')();
-	const detectCharacterEncoding = require('detect-character-encoding');
+	const ced = require('ced');
 	const Splitter = require('mailsplit').Splitter;
 
 	const quotedPrintable = require('quoted-printable');
@@ -327,7 +327,7 @@ const EmailBodyUtility = function() {
 				var does_specified_encoding_match_bodytext_encoding = bodytext_specified_encoding && bodytext_specified_encoding === bodytext_encoding_normalized;
 				
 				// body_text_encoded encoding
-				var body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.body_text_encoded));
+				var body_text_encoded_encoding = ced(Buffer.from(haraka_obj.body_text_encoded));
 				var body_text_encoded_encoding_normalized = body_text_encoded_encoding.encoding.trim().toLowerCase();
 				var does_specified_encoding_match_body_text_encoded_encoding = bodytext_specified_encoding === body_text_encoded_encoding_normalized;
 
