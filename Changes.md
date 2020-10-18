@@ -1,5 +1,7 @@
-# 1.6.5 - 2020-09-22
+# 1.6.5 - 2020-10-18
 
+- NEW: We've added an option to limit incoming emails. Please see README
+- We are now creating indexes for our collections 
 - Returning a "DENY" if the message is larger than 16MB
 - Returning a "DENY" if the message cannot be parsed
 
@@ -31,7 +33,6 @@
 - The log shows you now the connection to the MongoDB instance and depending on what you use a different wording for the connection
 - Emails with headers that contain "." are now inserted (previously those emails failed)
 - Updated libraries
-
 
 # 1.6.1 - 2020-08-27
 

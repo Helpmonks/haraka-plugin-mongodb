@@ -68,7 +68,8 @@ exports.load_mongodb_ini = function () {
 	plugin.cfg = plugin.config.get('mongodb.ini', {
 		booleans: [
 			'+enable.queue.yes',
-			'+enable.delivery.yes'
+			'+enable.delivery.yes',
+			'+limits.incoming.no'
 		]
 	},
 	function () {
@@ -120,6 +121,43 @@ exports.initialize_mongodb = function (next, server) {
 			}
 			// Initiate a watch on the attachment path
 			_checkAttachmentPaths(plugin);
+			// Create Indexes
+			server.notes.mongodb.collection(plugin.cfg.collections.queue).createIndex([
+				{
+					'key' : { 'received_date' : 1 },
+					'background' : true
+				},
+				{
+					'key' : { 'received_date' : -1 },
+					'background' : true
+				},
+				{
+					'key' : { 'message_id' : 1 },
+					'background' : true
+				},
+				{
+					'key' : { 'transferred' : 1, 'status' : 1, 'received_date' : 1 },
+					'background' : true
+				},
+				{
+					'key' : { 'transferred' : 1, 'status' : 1, 'timestamp' : 1 },
+					'background' : true
+				},
+			]);
+			// Limits
+			if (plugin.cfg.limits.incoming === 'yes') {
+				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).createIndex([
+					{
+						'key' : { 'from' : 1, 'to' : 1 },
+						'background' : true
+					},
+					{
+						'key' : { 'timestamp' : 1 },
+						'background' : true,
+						'expireAfterSeconds' : parseInt(plugin.cfg.limits.incoming_seconds)
+					}
+				]);
+			}
 			next();
 		});
 	}
@@ -147,13 +185,16 @@ exports.queue_to_mongodb = function(next, connection) {
 
 	var _size = connection && connection.transaction ? connection.transaction.data_bytes : null;
 
-
 	var _body_html;
 	var _body_text;
 
 	async.waterfall([
 		function (waterfall_callback) {
-			_mp(plugin, connection, function(error, email) {
+			// Options
+			var _options = { Iconv, 'skipImageLinks' : true };
+			if (plugin.cfg.message && plugin.cfg.message.limit) _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
+			// Parse
+			simpleParser(connection.transaction.message_stream, _options, (error, email) => {
 				if (error) {
 					plugin.logerror('--------------------------------------');
 					plugin.logerror(' Error from _mp !!! ', error.message);
@@ -166,8 +207,27 @@ exports.queue_to_mongodb = function(next, connection) {
 			});
 		},
 		function (email, waterfall_callback) {
+			// No limits check
+			if (plugin.cfg.limits.incoming === 'no') return waterfall_callback(null, email);
+			// If we have to check limit
+			_limitIncoming(plugin, email, function(error, status) {
+				// plugin.lognotice('limits cb: ', status)
+				return waterfall_callback( status ? 'limit' : null , email);
+			});
+		},
+		function (email, waterfall_callback) {
+			if ( email && email.attachments ) {
+				_storeAttachments(connection, plugin, email.attachments, email, function(error, mail_object) {
+					return waterfall_callback(error, mail_object);
+				});
+			}
+			else {
+				return waterfall_callback(error, email);
+			}
+		},
+		function (email, waterfall_callback) {
 			// Get proper body
-			EmailBodyUtility.getHtmlAndTextBody(email, body, function (error, html_and_text_body_info) {
+			EmailBodyUtility.getHtmlAndTextBody(email, body, function(error, html_and_text_body_info) {
 				if (error || ! html_and_text_body_info) {
 					return waterfall_callback(error || `unable to extract any email body data from email id:'${email._id}'`);
 				}
@@ -176,7 +236,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			});
 		},
 		function (body_info, email, waterfall_callback) {
-			plugin.lognotice(' body_info.meta !!! ', body_info.meta);
+			// plugin.lognotice(' body_info.meta !!! ', body_info.meta);
 			// Put values into object
 			email.extracted_html_from = body_info.meta.html_source;
 			email.extracted_text_from = body_info.meta.text_source;
@@ -192,13 +252,21 @@ exports.queue_to_mongodb = function(next, connection) {
 	],
 	function (error, email_object) {
 
+		// For limit
+		if (error === 'limit') {
+			plugin.lognotice('--------------------------------------');
+			plugin.lognotice(`Too many emails from this sender at the same time !!!`);
+			plugin.lognotice('--------------------------------------');
+			return next(DENYSOFT, "Too many emails from this sender at the same time");
+		}
+
 		if (error) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror(`Error parsing email: `, error.message);
 			plugin.logerror('--------------------------------------');
 			var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 			_sendMessageBack('parsing', plugin, _header, error);
-			return next(DENY, "Message cannot be parsed");
+			return next(DENYSOFT, "storage error");
 		}
 
 		// By default we store the haraka body and the whole email object
@@ -259,7 +327,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.logerror('--------------------------------------');
 				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 				_sendMessageBack('limit', plugin, _header);
-				return next(DENY, "Message size is too large");
+				return next(DENYSOFT, "storage error");
 			}
 		}
 
@@ -279,7 +347,7 @@ exports.queue_to_mongodb = function(next, connection) {
 						var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 						_sendMessageBack('insert', plugin, _header, err);
 						// Return
-						next(DENYSOFT, "Message cannot be stored");
+						next(DENYSOFT, "storage error");
 					}
 					else {
 						plugin.lognotice('--------------------------------------');
@@ -539,6 +607,66 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 		plugin.lognotice("response", response);
 		smtpTransport.close();
 	});
+}
+
+// Limits
+function _limitIncoming(plugin, email, cb) {
+	// From and to
+	var _from = email.headers.get('from') ? email.headers.get('from').value : email.headers.get('sender') ? email.headers.get('sender').value : null;
+	var _to = email.headers.get('to') ? email.headers.get('to').value : null;
+	var _cc = email.headers.has('cc') ? email.headers.get('cc').value : null;
+	var _bcc = email.headers.has('bcc') ? email.headers.get('bcc').value : null;
+	// plugin.lognotice("cc", _cc);
+	// plugin.lognotice("bcc", _bcc);
+	if (!_to) {
+		// plugin.lognotice("email.headers", email.headers);
+		// plugin.lognotice("email", email);
+		return cb(null, null);
+	}
+	// plugin.lognotice("_to 1", _to);
+	// plugin.lognotice("_from 1", _from);
+	_from = _from[0].address;
+	_to = _to.map(t => t.address || t);
+	// plugin.lognotice("_from 2", _from);
+	// plugin.lognotice("_to 2", _to);
+	// Check excludes
+	var _from_split = _from.split('@');
+	// plugin.lognotice("_from_split", _from_split);
+	if ( plugin.cfg.limits.exclude.includes(_from_split[1]) ) {
+		// plugin.lognotice("Exclude: ", _from);
+		return cb(null, null);
+	}
+	// Loop
+	async.eachSeries(_to, function(t, each_callback) {
+		// Object for query and insert
+		var _obj = { 'from' : _from, 'to' : t };
+		// Check
+		async.waterfall([
+			// Check
+			function (waterfall_callback) {
+				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).findOne(_obj, function(err, record) {
+					// plugin.lognotice("record", record);
+					// If found
+					if (record && record.from) return waterfall_callback(true);
+					return waterfall_callback(null);
+				});
+			},
+			// Insert
+			function (waterfall_callback) {
+				_obj.timestamp = new Date();
+				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).insertOne(_obj, { checkKeys : false }, function(err) {
+					waterfall_callback(null);
+				});
+			}
+		],
+		function (error) {
+			if (error) return cb(null, error);
+			return each_callback();
+		});
+	},
+	function(error) {
+		return cb(null, error || null);
+	}); 
 }
 
 // Create SMTP object for sending
@@ -1033,3 +1161,4 @@ function _checkAttachmentPaths(plugin) {
 		})
 	});
 }
+

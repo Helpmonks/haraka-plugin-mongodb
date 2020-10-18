@@ -1,10 +1,10 @@
 # MongoDB plugin for Haraka
 
-This plugin will store incoming emails in MongoDB and store all attachments on the disk. This plugin has been tested with over 500,000 incoming and outgoing emails a day.
+This plugin will store incoming emails (including bounces, etc.) in MongoDB and store all attachments on the disk. Additionally, it can also be used to store all results for outgoing emails.
 
-Additionally, you can also store all results for outgoing emails.
+As of version 1.6.5, we've added the option to limit incoming emails, also. There are many other options. Please make sure to read this README.
 
-As of version 1.1.5 this plugin also takes care of bounced messages, i.e., were previously we only stored the bounced results, we now extended on this and store more information, plus only send a bounce message once an hour.
+This plugin has been tested with over 500,000 incoming and outgoing emails a day.
 
 # Installation
 
@@ -29,16 +29,6 @@ npm install haraka-plugin-mongodb
 This will install everything that is needed for you to store incoming emails to MongoDB and also store results from outgoing emails.
 
 Alternatively you can also do a git clone into the Haraka node_modules directory. The installation directory depends if you installed Haraka globally or not.
-
-# Installation issues with iconv and node-gyp
-
-You might run into issues with iconv and node-gyp installation. Our suggested workaround is to use:
-
-```
-npm -g config set user root
-```
-
-and then install node-gyp globally and reinstall Haraka. Hope this helps.
 
 # Configuration
 
@@ -89,9 +79,23 @@ The limit option is set to 16777216 by default as MongoDB does not support docum
 
 Enter your SMTP server values and FROM, CC, and BCC for sending an alert email to the sender if an error occurs. Furthermore, set your message text for each message type.
 
+## Section: LIMITS (new as of 1.6.5)
+
+Enabling the limits for incoming emails will check the FROM and the TO email-address of incoming email and send back a "softdeny" if found. The time amount is set in the "timeout_seconds" setting. By default this is set to 10 seconds. In our experience, we've seen that this will throttle most automated systems, while emails from users are coming in without delays. Use the "exclude" settings to never throttle emails from a certain domain. 
+
 ### Compatibility
 
 This plugin has been tested with Nodejs v12 and MongoDB 4.4.x (it worked in the past with Nodejs v8.x and MongoDB 3.x)
+
+# Installation issues with iconv and node-gyp
+
+You might run into issues with iconv and node-gyp installation. Our suggested workaround is to use:
+
+```
+npm -g config set user root
+```
+
+and then install node-gyp globally and reinstall Haraka. Hope this helps.
 
 # Issues
 
