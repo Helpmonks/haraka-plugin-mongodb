@@ -4,6 +4,7 @@
 - We are now creating indexes for our collections 
 - Returning a "DENY" if the message is larger than 16MB
 - Returning a "DENY" if the message cannot be parsed
+- Updated libraries
 
 # 1.6.4 - 2020-09-22
 
