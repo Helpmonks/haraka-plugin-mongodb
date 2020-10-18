@@ -1,3 +1,7 @@
+# 1.6.6 - 2020-10-18
+
+- Reference gug fix
+
 # 1.6.5 - 2020-10-18
 
 - NEW: We've added an option to limit incoming emails. Please see README

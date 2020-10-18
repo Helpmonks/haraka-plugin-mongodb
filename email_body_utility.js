@@ -322,7 +322,7 @@ const EmailBodyUtility = function() {
 				var bodytext_specified_encoding = haraka_obj.body_encoding ? haraka_obj.body_encoding.trim().toLowerCase() : null;
 				
 				// bodytext encoding
-				var bodytext_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.bodytext));
+				var bodytext_encoding = ced(Buffer.from(haraka_obj.bodytext));
 				var bodytext_encoding_normalized = bodytext_encoding.encoding.trim().toLowerCase();
 				var does_specified_encoding_match_bodytext_encoding = bodytext_specified_encoding && bodytext_specified_encoding === bodytext_encoding_normalized;
 				
