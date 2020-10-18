@@ -1,6 +1,10 @@
+# 1.6.7 - 2020-10-18
+
+- Bug fix for parsing when value is undefined
+
 # 1.6.6 - 2020-10-18
 
-- Reference gug fix
+- Reference bug fix
 
 # 1.6.5 - 2020-10-18
 
