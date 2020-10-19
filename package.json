@@ -30,8 +30,8 @@
   "homepage": "https://github.com/haraka/haraka-plugin-mongodb#readme",
   "dependencies": {
     "async": "^3.2.0",
-    "ced": "^1.0.0",
     "decode-html": "^2",
+    "detect-character-encoding": "^0.8.0",
     "fs-extra": "^9",
     "iconv": "^3",
     "linkify-it": "^3",
