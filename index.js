@@ -327,7 +327,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.logerror('--------------------------------------');
 				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 				_sendMessageBack('limit', plugin, _header);
-				return next(DENYSOFT, "storage error");
+				return next(DENYDISCONNECT, "storage error");
 			}
 		}
 
@@ -626,7 +626,12 @@ function _limitIncoming(plugin, email, cb) {
 	// plugin.lognotice("bcc", _bcc);
 	// plugin.lognotice("_to 1", _to);
 	// plugin.lognotice("_from 1", _from);
-	_from = _from[0].address || from[0];
+	_from = _from[0].address || null;
+	// plugin.lognotice("_from 2", _from);
+	// Even now we might have some _from values without any email address
+	if (!_from) {
+		return cb(null, null);
+	}
 	_to = _to.map(t => t.address || t);
 	// plugin.lognotice("_from 2", _from);
 	// plugin.lognotice("_to 2", _to);
