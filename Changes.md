@@ -1,3 +1,9 @@
+# 1.6.8 - 2020-10-20
+
+- Returning a DENYDISCONNECT when the email size is too big to store
+- Another bug fix for limits
+- Reverted back to detect-character-encoding as 0.01% of emails could not be parsed otherwise
+
 # 1.6.7 - 2020-10-18
 
 - Bug fix for parsing when value is undefined
