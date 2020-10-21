@@ -1,4 +1,4 @@
-# 1.6.8 - 2020-10-20
+# 1.6.8 & 1.6.9 - 2020-10-20
 
 - Returning a DENYDISCONNECT when the email size is too big to store
 - Another bug fix for limits
