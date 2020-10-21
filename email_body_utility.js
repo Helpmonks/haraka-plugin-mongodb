@@ -5,6 +5,7 @@ const EmailBodyUtility = function() {
 	const linkify = require('linkify-it')();
 	const ced = require('ced');
 	const Splitter = require('mailsplit').Splitter;
+	const detectCharacterEncoding = require('detect-character-encoding');
 
 	const quotedPrintable = require('quoted-printable');
  
@@ -322,13 +323,15 @@ const EmailBodyUtility = function() {
 				var bodytext_specified_encoding = haraka_obj.body_encoding ? haraka_obj.body_encoding.trim().toLowerCase() : null;
 				
 				// bodytext encoding
-				var bodytext_encoding = ced(Buffer.from(haraka_obj.bodytext));
-				var bodytext_encoding_normalized = bodytext_encoding.encoding ? bodytext_encoding.encoding.trim().toLowerCase() : bodytext_encoding.trim().toLowerCase();
+				var bodytext_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.bodytext));
+				// var bodytext_encoding = ced(Buffer.from(haraka_obj.bodytext));
+				var bodytext_encoding_normalized = bodytext_encoding.encoding ? bodytext_encoding.encoding.trim().toLowerCase() : null;
 				var does_specified_encoding_match_bodytext_encoding = bodytext_specified_encoding && bodytext_specified_encoding === bodytext_encoding_normalized;
 				
 				// body_text_encoded encoding
-				var body_text_encoded_encoding = ced(Buffer.from(haraka_obj.body_text_encoded));
-				var body_text_encoded_encoding_normalized = body_text_encoded_encoding.encoding ? body_text_encoded_encoding.encoding.trim().toLowerCase() : body_text_encoded_encoding.trim().toLowerCase();
+				var body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.body_text_encoded));
+				// var body_text_encoded_encoding = ced(Buffer.from(haraka_obj.body_text_encoded));
+				var body_text_encoded_encoding_normalized = body_text_encoded_encoding.encoding ? body_text_encoded_encoding.encoding.trim().toLowerCase() : null;
 				var does_specified_encoding_match_body_text_encoded_encoding = bodytext_specified_encoding === body_text_encoded_encoding_normalized;
 
 				does_bodytext_contain_html_invalid_unicode = _contains_html_invalid_unicode.test(bodytext);

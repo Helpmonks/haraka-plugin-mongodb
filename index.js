@@ -327,7 +327,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.logerror('--------------------------------------');
 				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 				_sendMessageBack('limit', plugin, _header);
-				return next(DENYSOFT, "storage error");
+				return next(DENYDISCONNECT, "storage error");
 			}
 		}
 
@@ -613,19 +613,25 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 function _limitIncoming(plugin, email, cb) {
 	// From and to
 	var _from = email.headers.get('from') ? email.headers.get('from').value : email.headers.get('sender') ? email.headers.get('sender').value : null;
+	if (!_from) {
+		return cb(null, null);
+	}
 	var _to = email.headers.get('to') ? email.headers.get('to').value : null;
+	if (!_to) {
+		return cb(null, null);
+	}
 	var _cc = email.headers.has('cc') ? email.headers.get('cc').value : null;
 	var _bcc = email.headers.has('bcc') ? email.headers.get('bcc').value : null;
 	// plugin.lognotice("cc", _cc);
 	// plugin.lognotice("bcc", _bcc);
-	if (!_to) {
-		// plugin.lognotice("email.headers", email.headers);
-		// plugin.lognotice("email", email);
-		return cb(null, null);
-	}
 	// plugin.lognotice("_to 1", _to);
 	// plugin.lognotice("_from 1", _from);
-	_from = _from[0].address;
+	_from = _from[0].address || null;
+	// plugin.lognotice("_from 2", _from);
+	// Even now we might have some _from values without any email address
+	if (!_from) {
+		return cb(null, null);
+	}
 	_to = _to.map(t => t.address || t);
 	// plugin.lognotice("_from 2", _from);
 	// plugin.lognotice("_to 2", _to);
