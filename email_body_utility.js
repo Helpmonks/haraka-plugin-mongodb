@@ -3,7 +3,7 @@ const EmailBodyUtility = function() {
 
 	const async = require('async');
 	const linkify = require('linkify-it')();
-	const ced = require('ced');
+	// const ced = require('ced');
 	const Splitter = require('mailsplit').Splitter;
 	const detectCharacterEncoding = require('detect-character-encoding');
 
