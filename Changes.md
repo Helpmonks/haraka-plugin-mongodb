@@ -1,3 +1,11 @@
+# 1.7.0 - 2020-10-18
+
+- Re-factored the limits code as we have seen that you would get a timeout from time to time with the previous code
+- Disabled sending a delivery error message for DENYSOFT (this greatly cuts down on confusion and messages)
+- Do not send back error messages to certain keywords
+- Changed option to store the raw email and haraka body from true to false and made it an option
+- Fixed some callback
+
 # 1.6.8 & 1.6.9 - 2020-10-20
 
 - Returning a DENYDISCONNECT when the email size is too big to store
