@@ -631,13 +631,34 @@ function _limitIncoming(plugin, email_headers, cb) {
 		return cb(null, null);
 	};
 	// Make sure we got the email address
-	_from = _from.map(t => t.address || t);
+	_from = _from.map(t => t.address || t)[0];
+	// Clean from
+	_from = _from.replace(/<|>/gm, '');
+	// TO
 	_to = _to.map(t => t.address || t);
 	// Check excludes
 	var _from_split = _from.split('@');
 	// plugin.lognotice("_from_split", _from_split);
 	if ( plugin.cfg.limits.exclude.includes(_from_split[1]) ) {
 		// plugin.lognotice("Exclude: ", _from);
+		return cb(null, null);
+	}
+	// Check include
+	var _check = true;
+	var _limit_include = plugin.cfg.limits.include || [];
+	// Include has values
+	if ( _limit_include.length && _limit_include.includes(_from_split[1]) ) {
+		_check = true;
+	}
+	else {
+		_check = false;
+	}
+	// Include is empty
+	if ( !_limit_include.length ) {
+		_check = true;
+	}
+	// Return depending on check
+	if (!_check) {
 		return cb(null, null);
 	}
 	// Loop
