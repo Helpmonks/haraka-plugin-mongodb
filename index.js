@@ -143,6 +143,10 @@ exports.initialize_mongodb = function (next, server) {
 					'key' : { 'transferred' : 1, 'status' : 1, 'timestamp' : 1 },
 					'background' : true
 				},
+				{
+					'key' : { 'transferred' : 1, 'status' : 1, 'processed' : 1, 'timestamp' : 1 },
+					'background' : true
+				},
 			]);
 			// Limits
 			if (plugin.cfg.limits.incoming === 'yes') {
@@ -180,21 +184,28 @@ exports.enable_transaction_body_parse = function(next, connection) {
 // Hook for queue-ing
 exports.queue_to_mongodb = function(next, connection) {
 
+	var _stream = connection && connection.transaction && connection.transaction.message_stream ? true : false;
+	if (!_stream) return next();
+
 	var plugin = this;
 	var body = connection.transaction.body;
 
 	var _size = connection && connection.transaction ? connection.transaction.data_bytes : null;
+	var _header = connection && connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 
 	var _body_html;
 	var _body_text;
 
 	async.waterfall([
 		function (waterfall_callback) {
-			// Options
-			var _options = { Iconv, 'skipImageLinks' : true };
-			if (plugin.cfg.message && plugin.cfg.message.limit) _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
-			// Parse
-			simpleParser(connection.transaction.message_stream, _options, (error, email) => {
+			// Check limit
+			_limitIncoming(plugin, _header, function(error, status) {
+				// plugin.lognotice('limits cb: ', status)
+				return waterfall_callback( status ? 'limit' : null );
+			});
+		},
+		function (waterfall_callback) {
+			_mp(plugin, connection, function(error, email) {
 				if (error) {
 					plugin.logerror('--------------------------------------');
 					plugin.logerror(' Error from _mp !!! ', error.message);
@@ -207,27 +218,8 @@ exports.queue_to_mongodb = function(next, connection) {
 			});
 		},
 		function (email, waterfall_callback) {
-			// No limits check
-			if (plugin.cfg.limits.incoming === 'no') return waterfall_callback(null, email);
-			// If we have to check limit
-			_limitIncoming(plugin, email, function(error, status) {
-				// plugin.lognotice('limits cb: ', status)
-				return waterfall_callback( status ? 'limit' : null , email);
-			});
-		},
-		function (email, waterfall_callback) {
-			if ( email && email.attachments ) {
-				_storeAttachments(connection, plugin, email.attachments, email, function(error, mail_object) {
-					return waterfall_callback(error, mail_object);
-				});
-			}
-			else {
-				return waterfall_callback(error, email);
-			}
-		},
-		function (email, waterfall_callback) {
 			// Get proper body
-			EmailBodyUtility.getHtmlAndTextBody(email, body, function(error, html_and_text_body_info) {
+			EmailBodyUtility.getHtmlAndTextBody(email, body, function (error, html_and_text_body_info) {
 				if (error || ! html_and_text_body_info) {
 					return waterfall_callback(error || `unable to extract any email body data from email id:'${email._id}'`);
 				}
@@ -236,7 +228,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			});
 		},
 		function (body_info, email, waterfall_callback) {
-			// plugin.lognotice(' body_info.meta !!! ', body_info.meta);
+			plugin.lognotice(' body_info.meta !!! ', body_info.meta);
 			// Put values into object
 			email.extracted_html_from = body_info.meta.html_source;
 			email.extracted_text_from = body_info.meta.text_source;
@@ -264,13 +256,12 @@ exports.queue_to_mongodb = function(next, connection) {
 			plugin.logerror('--------------------------------------');
 			plugin.logerror(`Error parsing email: `, error.message);
 			plugin.logerror('--------------------------------------');
-			var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 			_sendMessageBack('parsing', plugin, _header, error);
-			return next(DENYSOFT, "storage error");
+			return next(DENYDISCONNECT, "storage error");
 		}
 
-		// By default we store the haraka body and the whole email object
-		var _store_raw = true;
+		// By default we do not store the haraka body and the whole email object
+		var _store_raw = plugin.cfg.message && plugin.cfg.message.store_raw === 'yes' ? true : false;
 
 		// If we have a size limit
 		if (_size && plugin.cfg.message && plugin.cfg.message.limit) {
@@ -284,10 +275,10 @@ exports.queue_to_mongodb = function(next, connection) {
 
 		// Mail object
 		var _email = {
-			'haraka_body': _store_raw && body ? body : null,
+			'haraka_body': _store_raw && body ? body : {},
 			'raw_html': _body_html,
 			'raw_text': _body_text,
-			'raw': _store_raw ? email_object : null,
+			'raw': _store_raw ? email_object : {},
 			'from': email_object.headers.get('from') ? email_object.headers.get('from').value : null,
 			'to': email_object.headers.get('to') ? email_object.headers.get('to').value : null,
 			'cc': email_object.headers.get('cc') ? email_object.headers.get('cc').value : null,
@@ -325,7 +316,6 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.logerror('--------------------------------------');
 				plugin.logerror(' Message size is too large. Sending back an error. Size is: ', _size);
 				plugin.logerror('--------------------------------------');
-				var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
 				_sendMessageBack('limit', plugin, _header);
 				return next(DENYDISCONNECT, "storage error");
 			}
@@ -344,16 +334,15 @@ exports.queue_to_mongodb = function(next, connection) {
 						plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
 						plugin.logerror('--------------------------------------');
 						// Send error
-						var _header = connection.transaction && connection.transaction.header ? connection.transaction.header : null;
-						_sendMessageBack('insert', plugin, _header, err);
+						// _sendMessageBack('insert', plugin, _header, err);
 						// Return
-						next(DENYSOFT, "storage error");
+						return next(DENYSOFT, "storage error");
 					}
 					else {
 						plugin.lognotice('--------------------------------------');
 						plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
 						plugin.lognotice('--------------------------------------');
-						next(OK);
+						return next(OK);
 					}
 				})
 			}
@@ -361,7 +350,7 @@ exports.queue_to_mongodb = function(next, connection) {
 				plugin.lognotice('--------------------------------------');
 				plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
 				plugin.lognotice('--------------------------------------');
-				next(OK);
+				return next(OK);
 			}
 		});
 
@@ -584,6 +573,20 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	var _text_error = error_object ? '\n\n' + error_object : '';
 	// Message-ID
 	var _message_id = email_headers.headers_decoded && email_headers.headers_decoded['message-id'] || email_headers['message-id'] || email_headers['Message-ID'] || null;
+	// FROM
+	var _from = plugin.cfg.smtp.from;
+	var _from_split = _from.split('@');
+	// Do not send a message to any root or java or other names
+	if (_message_id) {
+		var _message_id_lc = _message_id.toLowerCase();
+		if ( _message_id_lc.includes('postmaster') || _message_id_lc.includes('root') || _message_id_lc.includes('javamail') || _message_id_lc.includes('daemon') || _message_id_lc.includes('server') || _message_id_lc.includes('notreply') || _message_id_lc.includes('not-reply') || _message_id_lc.includes('not_reply') || _message_id_lc.includes('no-reply') || _message_id_lc.includes('noreply') || _message_id_lc.includes('no_reply') || _message_id_lc.includes(_from_split[1]) ) {
+			return;
+		}
+	}
+	// Do not set to certain email addresses
+	if ( _to.includes('postmaster') || _to.includes('root') || _to.includes('javamail') || _to.includes('daemon') || _to.includes('server') || _to.includes('notreply') || _to.includes('noreply') || _to.includes('not-reply') || _to.includes('not_reply') || _to.includes('no_reply') || _to.includes('no-reply') || _to.includes(_from_split[1]) ) {
+		return;
+	}
 	// Subject
 	var _subject = email_headers.headers_decoded && email_headers.headers_decoded['subject'] || email_headers.subject || email_headers.Subject || null;
 	// CC / BCC
@@ -594,7 +597,7 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	if (_sent_from) _cc.push(_sent_from);
 	// Mail options
 	var _mail_options = {
-		'from' : plugin.cfg.smtp.from,
+		'from' : _from,
 		'to' : _to,
 		'cc' : _cc,
 		'bcc' : _bcc,
@@ -610,36 +613,52 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 }
 
 // Limits
-function _limitIncoming(plugin, email, cb) {
-	// From and to
-	var _from = email.headers.get('from') ? email.headers.get('from').value : email.headers.get('sender') ? email.headers.get('sender').value : null;
-	if (!_from) {
+function _limitIncoming(plugin, email_headers, cb) {
+	// No limits check
+	if (plugin.cfg.limits.incoming === 'no') {
 		return cb(null, null);
 	}
-	var _to = email.headers.get('to') ? email.headers.get('to').value : null;
-	if (!_to) {
+	// Header not valid
+	if (!email_headers) {
 		return cb(null, null);
 	}
-	var _cc = email.headers.has('cc') ? email.headers.get('cc').value : null;
-	var _bcc = email.headers.has('bcc') ? email.headers.get('bcc').value : null;
-	// plugin.lognotice("cc", _cc);
-	// plugin.lognotice("bcc", _bcc);
-	// plugin.lognotice("_to 1", _to);
-	// plugin.lognotice("_from 1", _from);
-	_from = _from[0].address || null;
-	// plugin.lognotice("_from 2", _from);
-	// Even now we might have some _from values without any email address
-	if (!_from) {
+	// FROM
+	var _from = email_headers.headers_decoded['reply-to'] || email_headers.headers_decoded.from || email_headers.headers.mail_from && email_headers.headers.mail_from.original || null;
+	// TO
+	var _to = email_headers.headers_decoded.to || email_headers.headers.to || null;
+	// if to or from are null abort
+	if (!_from || !_to) {
 		return cb(null, null);
-	}
+	};
+	// Make sure we got the email address
+	_from = _from.map(t => t.address || t)[0];
+	// Clean from
+	_from = _from.replace(/<|>/gm, '');
+	// TO
 	_to = _to.map(t => t.address || t);
-	// plugin.lognotice("_from 2", _from);
-	// plugin.lognotice("_to 2", _to);
 	// Check excludes
 	var _from_split = _from.split('@');
 	// plugin.lognotice("_from_split", _from_split);
 	if ( plugin.cfg.limits.exclude.includes(_from_split[1]) ) {
 		// plugin.lognotice("Exclude: ", _from);
+		return cb(null, null);
+	}
+	// Check include
+	var _check = true;
+	var _limit_include = plugin.cfg.limits.include || [];
+	// Include has values
+	if ( _limit_include.length && _limit_include.includes(_from_split[1]) ) {
+		_check = true;
+	}
+	else {
+		_check = false;
+	}
+	// Include is empty
+	if ( !_limit_include.length ) {
+		_check = true;
+	}
+	// Return depending on check
+	if (!_check) {
 		return cb(null, null);
 	}
 	// Loop
@@ -659,15 +678,15 @@ function _limitIncoming(plugin, email, cb) {
 			},
 			// Insert
 			function (waterfall_callback) {
+				waterfall_callback(null);
 				_obj.timestamp = new Date();
 				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).insertOne(_obj, { checkKeys : false }, function(err) {
-					waterfall_callback(null);
+
 				});
 			}
 		],
 		function (error) {
-			if (error) return cb(null, error);
-			return each_callback();
+			return each_callback(error);
 		});
 	},
 	function(error) {
@@ -791,7 +810,10 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 	// Filter attachments starting with ~
 	attachments = attachments.filter(a => a.filename && a.filename.startsWith('~') ? false : true);
 
-	async.each(attachments, function (attachment, each_callback) {
+	// If no attachment anymore
+	if (!attachments.length) return cb(null, mail_object);
+
+	async.eachSeries(attachments, function(attachment, each_callback) {
 
 		// if attachment type is inline we don't need to store it anymore as the inline images are replaced with base64 encoded data URIs in mp2
 		// if ( attachment && attachment.related ) {
@@ -802,8 +824,8 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 		plugin.loginfo('--------------------------------------');
 		plugin.loginfo('Begin storing attachment');
+		plugin.loginfo('filename : ', attachment.filename);
 		// plugin.loginfo('Headers : ', attachment.headers);
-		// plugin.loginfo('filename : ', attachment.filename);
 		// plugin.loginfo('contentType : ', attachment.contentType);
 		// plugin.loginfo('contentDisposition : ', attachment.contentDisposition);
 		// plugin.loginfo('checksum : ', attachment.checksum);
@@ -813,10 +835,17 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		// plugin.loginfo('related : ', attachment.related);
 		plugin.loginfo('--------------------------------------');
 
+		try {
+
 		// Check contentype and check blocked attachments
 		if (attachment.contentType) {
 			// Filter out if type is on the reject list
 			if ( plugin.cfg.attachments.reject && plugin.cfg.attachments.reject.length && plugin.cfg.attachments.reject.includes(attachment.contentType) ) {
+				plugin.loginfo('--------------------------------------');
+				plugin.loginfo('Following attachment is blocked:');
+				plugin.loginfo('filename : ', attachment.filename);
+				plugin.loginfo('contentType : ', attachment.contentType);
+				plugin.loginfo('--------------------------------------');
 				_attachments = _attachments.filter(a => a.checksum !== attachment.checksum);
 				return each_callback();
 			}
@@ -910,8 +939,6 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			attachment.generatedFileName = _final;
 		}
 
-		// plugin.loginfo('attachment FINAL ! : ', attachment);
-
 		var attachment_directory = path.join(attachments_folder_path, attachment_checksum);
 		// plugin.loginfo('attachment_directory ! : ', attachment_directory);
 
@@ -925,7 +952,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			// Complete local path with the filename
 			var attachment_full_path = path.join(attachment_directory, attachment.generatedFileName);
 			// Log
-			plugin.loginfo(`Storing ${attachment.generatedFileName} locally at ${attachment_full_path}`);
+			plugin.loginfo(`Storing ${attachment.generatedFileName} at ${attachment_full_path}`);
 			// Write attachment to disk
 			fs.writeFile(attachment_full_path, attachment.content, function (error) {
 				// Log
@@ -935,7 +962,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 				}
 
 				// If we can store
-				plugin.lognotice(`Attachment ${attachment.generatedFileName} successfully stored locally (${attachment.length} bytes)`);
+				plugin.lognotice(`Attachment ${attachment.generatedFileName} (${attachment.length} bytes) successfully stored`);
 
 				// if we have an attachment in tnef, unzip it and store the results
 				if (attachment.generatedFileName.toLowerCase() === 'winmail.dat') {
@@ -975,12 +1002,18 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 								try {
 									fs.moveSync(_path_org, _path_new, { overwrite: true });
 								}
-								catch(e) {}
+								catch(e) {
+									plugin.logerror('error converting the name on disl, error :', e);
+									return each_callback();
+								}
 
 								// get the size of the file from the stats
 								fs.stat(_path_new, function (error, stats) {
 
-									if (error) plugin.logerror('error getting stats, error :', error);
+									if (error) {
+										plugin.logerror('error getting stats, error :', error);
+										return each_callback();
+									}
 
 									var attachment = {
 										'length' : stats ? +stats.size : 0,
@@ -1014,6 +1047,13 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 			});
 		});
+		
+		}
+		catch(e) {
+			plugin.loginfo('---------------------------- Error in attachments !!', e);
+			return each_callback(null);
+		}
+
 	},
 	function (error) {
 		// If error
@@ -1024,7 +1064,11 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 		// Add attachment back to mail object
 		mail_object.attachments = _attachments;
 		// Log
-		plugin.loginfo( `finished uploading all ${_attachments.length} attachments` );
+		if (_attachments.length) {
+			plugin.loginfo('--------------------------------------');
+			plugin.loginfo( `Finished processing of ${_attachments.length} attachments` );
+			plugin.loginfo('--------------------------------------');
+		}
 		// Callback
 		return cb(null, mail_object);
 	});

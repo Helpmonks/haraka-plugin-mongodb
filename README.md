@@ -81,7 +81,11 @@ Enter your SMTP server values and FROM, CC, and BCC for sending an alert email t
 
 ## Section: LIMITS (new as of 1.6.5)
 
-Enabling the limits for incoming emails will check the FROM and the TO email-address of incoming email and send back a "softdeny" if found. The time amount is set in the "timeout_seconds" setting. By default this is set to 10 seconds. In our experience, we've seen that this will throttle most automated systems, while emails from users are coming in without delays. Use the "exclude" settings to never throttle emails from a certain domain. 
+Enabling the limits for incoming emails will check the FROM and the TO email-address of incoming email and send back a "softdeny" if found. The time amount is set in the "timeout_seconds" setting. By default this is set to 10 seconds. In our experience, we've seen that this will throttle most automated systems, while emails from users are coming in without delays.
+
+Use the "exclude" (empty array) settings to never throttle emails from a certain domain.
+
+As of 1.7.0 you can also use the "include" (empty array) setting to only include certain domains in the check. An empty array means to check for all incoming emails, one or many values mean to only check for those domains.
 
 ### Compatibility
 
