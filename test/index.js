@@ -21,16 +21,39 @@ describe('template', function () {
     });
 });
 
-describe('load_template_ini', function () {
-    it('loads template.ini from config/template.ini', function (done) {
-        this.plugin.load_template_ini();
+describe('load_mongodb_ini', function () {
+    it('loads mongodb.ini from config/mongodb.ini', function (done) {
+        this.plugin.load_mongodb_ini();
         assert.ok(this.plugin.cfg);
         done();
     });
 
-    it('initializes enabled boolean', function (done) {
-        this.plugin.load_template_ini();
-        assert.equal(this.plugin.cfg.main.enabled, true, this.plugin.cfg);
+    it('initializes queue enabled boolean', function (done) {
+        this.plugin.load_mongodb_ini();
+        assert.equal(this.plugin.cfg.enable.queue, 'yes', this.plugin.cfg);
         done();
     });
+
+    it('initializes delivery enabled boolean', function (done) {
+        this.plugin.load_mongodb_ini();
+        assert.equal(this.plugin.cfg.enable.delivery, 'yes', this.plugin.cfg);
+        done();
+    });
+
 });
+
+describe('uses text fixtures', function () {
+  it('sets up a connection', function (done) {
+    this.connection = fixtures.connection.createConnection({})
+    assert.ok(this.connection.server)
+    done()
+  })
+
+  it('sets up a transaction', function (done) {
+    this.connection = fixtures.connection.createConnection({})
+    this.connection.transaction = fixtures.transaction.createTransaction({})
+    // console.log(this.connection.transaction)
+    assert.ok(this.connection.transaction.header)
+    done()
+  })
+})

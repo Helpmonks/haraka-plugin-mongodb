@@ -18,6 +18,7 @@ const Iconv = require('iconv').Iconv;
 const simpleParser = require('mailparser').simpleParser;
 const exec = require('child_process').exec;
 const nodemailer = require('nodemailer');
+const redis = require('ioredis');
 
 const EmailBodyUtility = require('./email_body_utility');
 
@@ -33,6 +34,8 @@ exports.register = function () {
 	// Load on startup
 	plugin.register_hook('init_master', 'initialize_mongodb');
 	plugin.register_hook('init_child', 'initialize_mongodb');
+	plugin.register_hook('init_master', 'initialize_redis');
+	plugin.register_hook('init_child', 'initialize_redis');
 
 	// Enable for queue
 	if (plugin.cfg.enable.queue === 'yes') {
@@ -75,6 +78,9 @@ exports.load_mongodb_ini = function () {
 	function () {
 		plugin.load_mongodb_ini();
 	});
+
+	plugin.cfg.limits.db = plugin.cfg.limits.db || 'mongodb';
+
 };
 
 exports.initialize_mongodb = function (next, server) {
@@ -149,7 +155,7 @@ exports.initialize_mongodb = function (next, server) {
 				},
 			]);
 			// Limits
-			if (plugin.cfg.limits.incoming === 'yes') {
+			if ( plugin.cfg.limits.incoming === 'yes' && plugin.cfg.limits.db === 'mongodb' ) {
 				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).createIndex([
 					{
 						'key' : { 'from' : 1, 'to' : 1 },
@@ -170,6 +176,49 @@ exports.initialize_mongodb = function (next, server) {
 		next();
 	}
 };
+
+exports.initialize_redis = function(next, server) {
+
+	var plugin = this;
+
+	// No redis
+	if ( plugin.cfg.limits.db !== 'redis' ) return next();
+	
+	// If there is already a connection
+	if ( server.notes.redis ) {
+		plugin.loginfo('There is already a Redis connection in the server.notes !!!');
+		return next();
+	}
+
+	// Client options
+	var _client_options = plugin.cfg.redis.string ? plugin.cfg.redis.string : {
+		port: plugin.cfg.redis.port,
+		host: plugin.cfg.redis.host,
+		dropBufferSupport : true,
+		enableOfflineQueue : true,
+		showFriendlyErrorStack : false,
+		keepAlive : 0,
+		connectTimeout : 30000
+	};
+
+	// Connect to redis
+	var _client = plugin.cfg.redis.string ? new redis(_client_options, { keepAlive: 0, dropBufferSupport: true, enableOfflineQueue : true, connectTimeout: 30000, showFriendlyErrorStack : false }) : new redis(_client_options);
+
+	_client.on('ready', function () {
+		plugin.loginfo('-----------------------------------------------------');
+		plugin.loginfo(`Successfully connected to Redis!`);
+		plugin.loginfo(`Host: ${plugin.cfg.redis.host} Port: ${plugin.cfg.redis.port}`);
+		plugin.loginfo('-----------------------------------------------------');
+		server.notes.redis = _client;
+	});
+
+	_client.on('error', function (error) {
+		plugin.loginfo(`REDIS: client on error: `, error);
+	});
+
+	next();
+
+}
 
 // ------------------
 // QUEUE
@@ -246,9 +295,9 @@ exports.queue_to_mongodb = function(next, connection) {
 
 		// For limit
 		if (error === 'limit') {
-			plugin.lognotice('--------------------------------------');
-			plugin.lognotice(`Too many emails from this sender at the same time !!!`);
-			plugin.lognotice('--------------------------------------');
+			// plugin.lognotice('--------------------------------------');
+			// plugin.lognotice(`Too many emails from this sender at the same time !!!`);
+			// plugin.lognotice('--------------------------------------');
 			return next(DENYSOFT, "Too many emails from this sender at the same time");
 		}
 
@@ -646,6 +695,7 @@ function _limitIncoming(plugin, email_headers, cb) {
 	// Check include
 	var _check = true;
 	var _limit_include = plugin.cfg.limits.include || [];
+	_limit_include = JSON.parse(_limit_include);
 	// Include has values
 	if ( _limit_include.length && _limit_include.includes(_from_split[1]) ) {
 		_check = true;
@@ -661,33 +711,62 @@ function _limitIncoming(plugin, email_headers, cb) {
 	if (!_check) {
 		return cb(null, null);
 	}
+	// Which db
+	var _is_mongodb = plugin.cfg.limits.db === 'mongodb' ? true : false;
 	// Loop
 	async.eachSeries(_to, function(t, each_callback) {
-		// Object for query and insert
-		var _obj = { 'from' : _from, 'to' : t };
-		// Check
-		async.waterfall([
+		if (_is_mongodb) {
+			// Object for query and insert
+			var _obj = { 'from' : _from, 'to' : t };
 			// Check
-			function (waterfall_callback) {
-				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).findOne(_obj, function(err, record) {
-					// plugin.lognotice("record", record);
-					// If found
-					if (record && record.from) return waterfall_callback(true);
-					return waterfall_callback(null);
-				});
-			},
-			// Insert
-			function (waterfall_callback) {
-				waterfall_callback(null);
-				_obj.timestamp = new Date();
-				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).insertOne(_obj, { checkKeys : false }, function(err) {
+			async.waterfall([
+				// Check
+				function (waterfall_callback) {
+					server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).findOne(_obj, function(err, record) {
+						// plugin.lognotice("record", record);
+						// If found
+						if (record && record.from) {
+							plugin.lognotice('--------------------------------------');
+							plugin.lognotice(`Too many emails within ${plugin.cfg.limits.incoming_seconds} seconds`);
+							plugin.lognotice(`from ${_from} !!!`);
+							plugin.lognotice('--------------------------------------');
+							return waterfall_callback(true);
+						}
+						return waterfall_callback(null);
+					});
+				},
+				// Insert
+				function (waterfall_callback) {
+					waterfall_callback(null);
+					_obj.timestamp = new Date();
+					server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).insertOne(_obj, { checkKeys : false }, function(err) {
 
-				});
-			}
-		],
-		function (error) {
-			return each_callback(error);
-		});
+					});
+				}
+			],
+			function (error) {
+				return each_callback(error);
+			});
+		}
+		else {
+			// Key
+			var _key = `${_from}_${_to}`.replace(/[^A-Za-z0-9]/g,'');
+			// Check for key
+			server.notes.redis.get(_key, function(error, data) {
+				// If here
+				if (data) {
+					plugin.lognotice('--------------------------------------');
+					plugin.lognotice(`Too many emails within ${plugin.cfg.limits.incoming_seconds} seconds`);
+					plugin.lognotice(`from ${_from} !!!`);
+					plugin.lognotice('--------------------------------------');
+					return each_callback(true);
+				}
+				// Else add key
+				server.notes.redis.set(_key, true, "EX", parseInt(plugin.cfg.limits.incoming_seconds));
+				// Return
+				each_callback(null);
+			});
+		}
 	},
 	function(error) {
 		return cb(null, error || null);

@@ -1,0 +1,24 @@
+env:
+  node: true
+  es6: true
+  mocha: true
+
+plugins:
+  - haraka
+
+extends:
+  - eslint:recommended
+  - plugin:haraka/recommended
+
+rules:
+  indent: [2, 2, {"SwitchCase": 1}]
+
+root: true
+
+globals:
+  OK: true
+  CONT: true
+  DENY: true
+  DENYSOFT: true
+  DENYDISCONNECT: true
+  DENYSOFTDISCONNECT: true
