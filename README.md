@@ -87,6 +87,24 @@ Use the "exclude" (empty array) settings to never throttle emails from a certain
 
 As of 1.7.0 you can also use the "include" (empty array) setting to only include certain domains in the check. An empty array means to check for all incoming emails, one or many values mean to only check for those domains.
 
+As of 1.8.0 there is a new parameter called "db" that lets you use Redis as an alternative to MongoDB. This is helpful if you get thousands of emails and want to save on the constant MongoDB connections. Besides, the MongoDB TTL is not accurate enough and Redis is made for such a use case. Set db=redis to use Redis instead of db=mongodb.
+
+If you use Redis, you also need to add the new Redis section to your config file:
+
+```
+[redis]
+; user
+user=
+; password
+pass=
+; host
+host=127.0.0.1
+; string (full redis connection string)
+string=
+; port
+port=6379
+```
+
 ### Compatibility
 
 This plugin has been tested with Nodejs v12 and MongoDB 4.4.x (it worked in the past with Nodejs v8.x and MongoDB 3.x)

@@ -1,3 +1,9 @@
+# 1.8.0 - 2021-03-24
+
+- You now have the option to use Redis for the limit check! See the README for configuration.
+- Fixed an issue with the "include" limit param if used as empty array.
+- Updated libraries.
+
 # 1.7.0 - 2021-01-08
 
 - Added "include" in the limit check to be able to only apply the limit check for certain domains

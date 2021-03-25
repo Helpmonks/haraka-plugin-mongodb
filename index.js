@@ -78,6 +78,9 @@ exports.load_mongodb_ini = function () {
 	function () {
 		plugin.load_mongodb_ini();
 	});
+
+	plugin.cfg.limits.db = plugin.cfg.limits.db || 'mongodb';
+
 };
 
 exports.initialize_mongodb = function (next, server) {
