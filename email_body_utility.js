@@ -8,7 +8,7 @@ const EmailBodyUtility = function() {
 	const detectCharacterEncoding = require('detect-character-encoding');
 
 	const quotedPrintable = require('quoted-printable');
- 
+
 	const _default_html_field_order = 'bodytext_html mailparser_html mailparser_text_as_html'.split(' ');
 	const _default_text_field_order = 'bodytext_plain mailparser_text'.split(' ');
 
@@ -19,7 +19,7 @@ const EmailBodyUtility = function() {
 
 	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/img;
 	const _windows_charset_regex = /text\/html;\s*charset=Windows-125(2|7)/img;
-	
+
 	const _uses_windows_1257_charset = /charset=Windows-1257/im;
 	const _contains_html_invalid_unicode = /\x82/;
 	const _contains_replacement_char_unicode = /\uFFFD/; // i.e �
@@ -41,124 +41,126 @@ const EmailBodyUtility = function() {
 		callback = typeof callback === 'function' ? callback : null;
 
 		var _specified_options = Object.keys(options);
-		if (_specified_options.includes('log_module')) { _log_module = !! options.log_module; }
-		if (_specified_options.includes('log_all_fields')) { _log_module = _log_all_fields && !! options.log_all_fields; }
+		if (_specified_options.includes('log_module')) { _log_module = !!options.log_module; }
+		if (_specified_options.includes('log_all_fields')) { _log_module = _log_all_fields && !!options.log_all_fields; }
 
 		var has_rfc_822_message = false;
 		var uses_windows_1257_charset = false;
 
 		async.waterfall([
-			/* get basic html and text bodies */
-			function (waterfall_callback) {
+				/* get basic html and text bodies */
+				function(waterfall_callback) {
 
-				has_rfc_822_message = _getDistinctFieldValues(body, 'ct').includes('message/rfc822');
-				_log_module && has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), has RFC-822 message, using mailparser result`);
+					has_rfc_822_message = _getDistinctFieldValues(body, 'ct').includes('message/rfc822');
+					_log_module && has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), has RFC-822 message, using mailparser result`);
 
-				uses_windows_1257_charset = _uses_windows_1257_charset.test(email_obj.html);
+					uses_windows_1257_charset = _uses_windows_1257_charset.test(email_obj.html);
 
-				var prefer_mailparser =  has_rfc_822_message || uses_windows_1257_charset;
+					var prefer_mailparser = has_rfc_822_message || uses_windows_1257_charset;
 
-				// continue to use mailparser result if rfc_822 message is present
-				var html_field_order = prefer_mailparser ? 'mailparser_html mailparser_text_as_html'.split(' ') : _default_html_field_order;
-				var text_field_order = prefer_mailparser ? 'mailparser_text bodytext_plain'.split(' ') : _default_text_field_order;
+					// continue to use mailparser result if rfc_822 message is present
+					var html_field_order = prefer_mailparser ? 'mailparser_html mailparser_text_as_html'.split(' ') : _default_html_field_order;
+					var text_field_order = prefer_mailparser ? 'mailparser_text bodytext_plain'.split(' ') : _default_text_field_order;
 
-				_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'html'...`);
-				var html_info = ! options.ignore_html_result ? _extractBody(email_obj, body, html_field_order, options) : { result : '' };
-				_log_module && ! has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), html result came from '${html_info.source}' and has a length of '${html_info.result.length}'`);
+					_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'html'...`);
+					var html_info = !options.ignore_html_result ? _extractBody(email_obj, body, html_field_order, options) : { result: '' };
+					_log_module && !has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), html result came from '${html_info.source}' and has a length of '${html_info.result.length}'`);
 
-				_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'text'...`);
-				var text_info = ! options.ignore_text_result ? _extractBody(email_obj, body, text_field_order, options) : { result : '' };
+					_log_module && console.log(`\ngetHtmlAndTextBody(), extracting 'text'...`);
+					var text_info = !options.ignore_text_result ? _extractBody(email_obj, body, text_field_order, options) : { result: '' };
 
-				_log_module && ! has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), text result came from '${text_info.source}' and has a length of '${text_info.result.length}'`);
-				return waterfall_callback(null, html_info, text_info);
-			},
-			/* extract and append rfc822 info if present
-				-- USING MAILPARSER RESULTS FOR RFC822 containing messages until _getRfc822HtmlAndTextBody() is complete --
-			*/
-			function (html_info, text_info, waterfall_callback) {
-
-				var has_rfc_822_message = _getDistinctFieldValues(body, 'ct').includes('message/rfc822');
-
-				if (! has_rfc_822_message) { return waterfall_callback(null, html_info, text_info); }
-
-				_getRfc822HtmlAndTextBody(body, function (error, rfc_822_bodies) {
-					if (error) { return waterfall_callback(error); }
-
-					html_info.result += rfc_822_bodies.html;
-					// html_info.source = 'rfc_822_result';
-					text_info.result += rfc_822_bodies.text;
-					// text_info.source = 'rfc_822_result';
-
+					_log_module && !has_rfc_822_message && console.log(`\ngetHtmlAndTextBody(), text result came from '${text_info.source}' and has a length of '${text_info.result.length}'`);
 					return waterfall_callback(null, html_info, text_info);
-				});
-			},
-			/* analyse results and overwrite html if text is better parsed */
-			function (html_info, text_info, waterfall_callback) {
+				},
+				/* extract and append rfc822 info if present
+					-- USING MAILPARSER RESULTS FOR RFC822 containing messages until _getRfc822HtmlAndTextBody() is complete --
+				*/
+				function(html_info, text_info, waterfall_callback) {
 
-				var use_text_for_html = ! html_info.result // if we have no html result
-					|| (text_info.result && html_info.source.includes('mailparser') && ! text_info.source.includes('mailparser')) // if we have a text result, and the html result was from mailparser
-					|| (! html_info.has_valid_encoding && text_info.has_valid_encoding); // or we could not properly decode the content for the html but we could for the text
+					var has_rfc_822_message = _getDistinctFieldValues(body, 'ct').includes('message/rfc822');
 
-				// override any html mailparser result we have if there's a valid text result
-				if (use_text_for_html) {
-					_log_module && console.log(`\ngetHtmlAndTextBody(), have no html or an invalid html result, converting text result to html`);
-					// copy over the html result, using the text as the body
-					html_info.result = convertPlainTextToHtml(text_info.result);
-					html_info.source = text_info.source;
+					if (!has_rfc_822_message) { return waterfall_callback(null, html_info, text_info); }
+
+					_getRfc822HtmlAndTextBody(body, function(error, rfc_822_bodies) {
+						if (error) { return waterfall_callback(error); }
+
+						html_info.result += rfc_822_bodies.html;
+						// html_info.source = 'rfc_822_result';
+						text_info.result += rfc_822_bodies.text;
+						// text_info.source = 'rfc_822_result';
+
+						return waterfall_callback(null, html_info, text_info);
+					});
+				},
+				/* analyse results and overwrite html if text is better parsed */
+				function(html_info, text_info, waterfall_callback) {
+
+					var use_text_for_html = !html_info.result // if we have no html result
+						||
+						(text_info.result && html_info.source.includes('mailparser') && !text_info.source.includes('mailparser')) // if we have a text result, and the html result was from mailparser
+						||
+						(!html_info.has_valid_encoding && text_info.has_valid_encoding); // or we could not properly decode the content for the html but we could for the text
+
+					// override any html mailparser result we have if there's a valid text result
+					if (use_text_for_html) {
+						_log_module && console.log(`\ngetHtmlAndTextBody(), have no html or an invalid html result, converting text result to html`);
+						// copy over the html result, using the text as the body
+						html_info.result = convertPlainTextToHtml(text_info.result);
+						html_info.source = text_info.source;
+					}
+
+					return waterfall_callback(null, html_info, text_info, use_text_for_html);
+				}
+			],
+			function(error, html_info, text_info, use_text_for_html) {
+				if (error) { return callback && callback(error); }
+
+				var extracted_bodies = {
+					'html': html_info.result,
+					'text': text_info.result,
+					'meta': {
+						has_rfc_822_message,
+						'is_html_from_text': use_text_for_html,
+						'html_source': html_info.source,
+						'html_has_valid_encoding': html_info.has_valid_encoding,
+						'text_source': text_info.source,
+						'text_has_valid_encoding': text_info.has_valid_encoding,
+						'does_bodytext_contain_invalid_html': html_info.does_bodytext_contain_html_invalid_unicode,
+						'does_body_text_encoded_contain_invalid_html': html_info.does_body_text_encoded_contain_html_invalid_unicode,
+						'does_bodytext_contain_replacement_char_unicode': html_info.does_bodytext_contain_replacement_char_unicode,
+						'does_body_text_encoded_contain_replacement_char_unicode': html_info.does_body_text_encoded_contain_replacement_char_unicode
+					}
+				};
+
+				// if alternates were requested add them to the final result
+				if (options.store_alternates) {
+					extracted_bodies.meta.alternate_bodies = {
+						'html': html_info.alternate_bodies || [],
+						'text': text_info.alternate_bodies || []
+					}
 				}
 
-				return waterfall_callback(null, html_info, text_info, use_text_for_html);
-			}
-		],
-		function (error, html_info, text_info, use_text_for_html) {
-			if (error) { return callback && callback(error); }
-
-			var extracted_bodies = {
-				'html' : html_info.result,
-				'text' : text_info.result,
-				'meta' : {
-					has_rfc_822_message,
-					'is_html_from_text' : use_text_for_html,
-					'html_source' : html_info.source,
-					'html_has_valid_encoding' : html_info.has_valid_encoding,
-					'text_source' : text_info.source,
-					'text_has_valid_encoding' : text_info.has_valid_encoding,
-					'does_bodytext_contain_invalid_html' : html_info.does_bodytext_contain_html_invalid_unicode,
-					'does_body_text_encoded_contain_invalid_html' : html_info.does_body_text_encoded_contain_html_invalid_unicode,
-					'does_bodytext_contain_replacement_char_unicode' : html_info.does_bodytext_contain_replacement_char_unicode,
-					'does_body_text_encoded_contain_replacement_char_unicode' : html_info.does_body_text_encoded_contain_replacement_char_unicode
-				}
-			};
-
-			// if alternates were requested add them to the final result
-			if (options.store_alternates) {
-				extracted_bodies.meta.alternate_bodies = {
-					'html' : html_info.alternate_bodies || [],
-					'text' : text_info.alternate_bodies || []
-				}
-			}
-
-			return callback && callback(null, extracted_bodies);
-		});
+				return callback && callback(null, extracted_bodies);
+			});
 	};
 
 	const convertPlainTextToHtml = function(text) {
 
-		if (! text) { return ''; }
+		if (!text) { return ''; }
 
-		if (typeof text !== 'string' || text.length > _linkify_text_size_threshold) { return text; } 
+		if (typeof text !== 'string' || text.length > _linkify_text_size_threshold) { return text; }
 
 		// use linkify to convert any links to <a>
 		var words = text.split(' ');
 
 		words = words.map((w) => {
 			// if there're no links return w as is
-			if (! linkify.test(w)) { return w; }
+			if (!linkify.test(w)) { return w; }
 
 			var matches = linkify.match(w);
 
 			// loop through the matches backwards so that the matches' indexes remain unchanged throughout the changes
-			for (var i = matches.length -1; i >= 0; i--) {
+			for (var i = matches.length - 1; i >= 0; i--) {
 				var m = matches[i];
 				w = `${w.substring(0, m.index)}<a href="${m.url}">${m.text}</a>${w.substring(m.lastIndex)}`;
 			}
@@ -174,7 +176,7 @@ const EmailBodyUtility = function() {
 		text_as_html = text_as_html.replace(/\n/g, '<br/>').trim();
 
 		// remove any starting and trailing empty paragraphs
-		while (! text_as_html.indexOf('<p></p>')) {
+		while (!text_as_html.indexOf('<p></p>')) {
 			text_as_html = text_as_html.substring('<p></p>'.length).trim();
 		}
 
@@ -189,8 +191,8 @@ const EmailBodyUtility = function() {
 	////////////////// Internal Functions ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	const _no_body_result = {
-		'body' : '',
-		'source' : 'none',
+		'body': '',
+		'source': 'none',
 	};
 
 	const _extractBody = function(email_obj, body, field_order = _default_html_field_order, options = {}) {
@@ -211,18 +213,18 @@ const EmailBodyUtility = function() {
 
 		var i = 0;
 		// if we're storing alternate bodies then loop over every field
-		while ((! field_value || options.store_alternates) && i < field_order.length) {
+		while ((!field_value || options.store_alternates) && i < field_order.length) {
 			var field = field_order[i++];
 			var result = getBodyByField(email_obj, body, field);
 
 			// if it's the first match, then it's the result
-			var is_result = ! field_value && !! result.body;
+			var is_result = !field_value && !!result.body;
 
 			// don't overwrite the value if we have one
 			field_value = is_result ? result.body : field_value;
 			source = is_result ? result.source : source;
 
-			if ((is_result && (! Array.isArray(result.alternate_bodies)) || ! options.store_alternates)) {
+			if ((is_result && (!Array.isArray(result.alternate_bodies)) || !options.store_alternates)) {
 				// don't store the final result with the alternates
 				options.store_alternates && result.alternate_bodies && delete alternate_bodies[field];
 				continue;
@@ -238,8 +240,8 @@ const EmailBodyUtility = function() {
 			} else {
 				// store the alternates to send back
 				alternate_bodies[field] = result.alternate_bodies || {
-					'body' : result.body,
-					'source' : result.source
+					'body': result.body,
+					'source': result.source
 				};
 			}
 		}
@@ -248,7 +250,7 @@ const EmailBodyUtility = function() {
 		source = source || 'none';
 
 		return {
-			'result' : field_value,
+			'result': field_value,
 			source,
 			has_valid_encoding,
 			alternate_bodies,
@@ -276,26 +278,26 @@ const EmailBodyUtility = function() {
 
 					return {
 						body,
-						'source' : 'mailparser_html'
+						'source': 'mailparser_html'
 					};
 
 				case 'mailparser_text_as_html':
 					return {
-						'body' : email_obj.textAsHtml || '',
-						'source' : 'mailparser_text_as_html'
+						'body': email_obj.textAsHtml || '',
+						'source': 'mailparser_text_as_html'
 					};
 
-				case 'mailparser_text' :
+				case 'mailparser_text':
 					return {
-						'body' : email_obj.text || '',
-						'source' : 'mailparser_text'
+						'body': email_obj.text || '',
+						'source': 'mailparser_text'
 					};
 
 				default:
 					console.log(`unknown field type requested for body field: '${field}'`);
 					return {
-						'body' : '',
-						'source' : 'none'
+						'body': '',
+						'source': 'none'
 					};
 			}
 		}
@@ -307,7 +309,7 @@ const EmailBodyUtility = function() {
 			const is_requested_type = haraka_obj.ct && haraka_obj.ct.toLowerCase().includes(type);
 
 			var is_matching_node = is_requested_type && (haraka_obj.bodytext || haraka_obj.body_text_encoded)
-			_log_module && ! is_matching_node && console.log(`${'\t'.repeat(depth)} [${index}] not a matching node for type '${type}'`);
+			_log_module && !is_matching_node && console.log(`${'\t'.repeat(depth)} [${index}] not a matching node for type '${type}'`);
 
 			if (is_matching_node) {
 				_log_module && console.log(`${'\t'.repeat(depth)} [${index}] found a matching bodytype of length '${haraka_obj.bodytext.length || haraka_obj.body_text_encoded.length}' for type '${type}'`);
@@ -317,17 +319,17 @@ const EmailBodyUtility = function() {
 				var haraka_body_text_encoded = _formatQuotedPrintableBody(haraka_obj.body_text_encoded);
 
 				// set has_valid_encoding
-				has_valid_encoding = !! haraka_obj.body_encoding && ! haraka_obj.body_encoding.includes('broken') && !! haraka_obj.bodytext;
-				has_broken_encoding = !! haraka_obj.body_encoding && haraka_obj.body_encoding.includes('broken') && !! haraka_obj.bodytext;
+				has_valid_encoding = !!haraka_obj.body_encoding && !haraka_obj.body_encoding.includes('broken') && !!haraka_obj.bodytext;
+				has_broken_encoding = !!haraka_obj.body_encoding && haraka_obj.body_encoding.includes('broken') && !!haraka_obj.bodytext;
 
 				var bodytext_specified_encoding = haraka_obj.body_encoding ? haraka_obj.body_encoding.trim().toLowerCase() : null;
-				
+
 				// bodytext encoding
 				var bodytext_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.bodytext));
 				// var bodytext_encoding = ced(Buffer.from(haraka_obj.bodytext));
 				var bodytext_encoding_normalized = bodytext_encoding.encoding ? bodytext_encoding.encoding.trim().toLowerCase() : null;
 				var does_specified_encoding_match_bodytext_encoding = bodytext_specified_encoding && bodytext_specified_encoding === bodytext_encoding_normalized;
-				
+
 				// body_text_encoded encoding
 				var body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.body_text_encoded));
 				// var body_text_encoded_encoding = ced(Buffer.from(haraka_obj.body_text_encoded));
@@ -339,16 +341,16 @@ const EmailBodyUtility = function() {
 				does_bodytext_contain_replacement_char_unicode = _contains_replacement_char_unicode.test(bodytext);
 				does_body_text_encoded_contain_replacement_char_unicode = _contains_replacement_char_unicode.test(haraka_body_text_encoded);
 
-				var has_higher_bodytext_encoding_confidence = (bodytext_encoding.confidence >= body_text_encoded_encoding.confidence && body_text_encoded_encoding.confidence < 100)
-					|| (does_body_text_encoded_contain_html_invalid_unicode && ! does_bodytext_contain_html_invalid_unicode)
-					|| (does_body_text_encoded_contain_replacement_char_unicode && ! does_bodytext_contain_replacement_char_unicode);
+				var has_higher_bodytext_encoding_confidence = (bodytext_encoding.confidence >= body_text_encoded_encoding.confidence && body_text_encoded_encoding.confidence < 100) ||
+					(does_body_text_encoded_contain_html_invalid_unicode && !does_bodytext_contain_html_invalid_unicode) ||
+					(does_body_text_encoded_contain_replacement_char_unicode && !does_bodytext_contain_replacement_char_unicode);
 
-				var does_specified_encoding_match_neither_guessed_encoding = ! does_specified_encoding_match_body_text_encoded_encoding && ! does_specified_encoding_match_bodytext_encoding;
+				var does_specified_encoding_match_neither_guessed_encoding = !does_specified_encoding_match_body_text_encoded_encoding && !does_specified_encoding_match_bodytext_encoding;
 
 				var prefer_bodytext_for_ascii = has_broken_encoding && bodytext_specified_encoding.includes('us-asci');
 
-				var prefer_bodytext_for_encoding_confidence = ! has_broken_encoding && has_higher_bodytext_encoding_confidence 
-					&& (! does_bodytext_contain_replacement_char_unicode || does_body_text_encoded_contain_replacement_char_unicode || body_text_encoded_encoding.confidence < 20)
+				var prefer_bodytext_for_encoding_confidence = !has_broken_encoding && has_higher_bodytext_encoding_confidence &&
+					(!does_bodytext_contain_replacement_char_unicode || does_body_text_encoded_contain_replacement_char_unicode || body_text_encoded_encoding.confidence < 20)
 
 				var prefer_bodytext_for_8859_values = bodytext_encoding_normalized !== 'iso-8859-1' && body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
 				var prefer_bodytext_for_8859_values = body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
@@ -369,13 +371,13 @@ const EmailBodyUtility = function() {
 
 				var result = { body, source };
 
-				if (! options.store_alternates) { return result; }
+				if (!options.store_alternates) { return result; }
 
 				// put together the alternate_body info to send back
 				var alternate_bodies = _haraka_bodytext_variations.filter(v => v !== source && source !== 'none').map((variation) => {
 					var body = variation === 'haraka_bodytext' ? bodytext : haraka_body_text_encoded;
-				
-					return { body, 'source' : variation };
+
+					return { body, 'source': variation };
 				});
 
 				// add the variations to the result
@@ -385,7 +387,7 @@ const EmailBodyUtility = function() {
 			}
 
 			// if there's no children then there's nohing further to check along this path
-			if (! haraka_obj.children || ! haraka_obj.children.length) {
+			if (!haraka_obj.children || !haraka_obj.children.length) {
 				_log_module && console.log(`${'\t'.repeat(depth)} [${index}] no children at current node of depth '${depth}', sending back an empty string (type:'${type}')`);
 				return _no_body_result;
 			}
@@ -398,10 +400,10 @@ const EmailBodyUtility = function() {
 			var has_valid_child_body = false;
 			var i = 0;
 			// take the text from the first child that has it
-			while (! has_valid_child_body && i < num_children) {
-				var child_result = getBodyOfTypeFromChildren(haraka_obj.children[i++], type, depth+1, ++index);
+			while (!has_valid_child_body && i < num_children) {
+				var child_result = getBodyOfTypeFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
 				child_result.body = child_result.body.trim();
-				has_valid_child_body = !! child_result.body;
+				has_valid_child_body = !!child_result.body;
 			}
 
 			var child_result = has_valid_child_body ? child_result : _no_body_result
@@ -411,7 +413,7 @@ const EmailBodyUtility = function() {
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 			function _printParseInfo() {
-				if (! _log_module) { return; }
+				if (!_log_module) { return; }
 
 				console.log(`\n\n[START :${type}] ${'^'.repeat(180)}\n`)
 				console.log(`[${type}] charset:${haraka_obj.ct}`)
@@ -434,11 +436,11 @@ const EmailBodyUtility = function() {
 				console.log(`[${type}] encoding, '${haraka_obj.body_encoding}', is ${has_valid_encoding ? 'valid' : 'INVALID'}\n`);
 				console.log('');
 				use_bodytext && console.log(`[${type}] using 'haraka_bodytext'`);
-				! use_bodytext && console.log(`[${type}] using 'haraka_bodytext_encoded'`);
+				!use_bodytext && console.log(`[${type}] using 'haraka_bodytext_encoded'`);
 
 				console.log(`\n\n${'-'.repeat(180)}\n`);
 
-				if (! _log_all_fields) {
+				if (!_log_all_fields) {
 					console.log('\nSOURCE: ' + source + '\n\n');
 					console.log(_shortenText(body));
 				} else {
@@ -478,7 +480,7 @@ const EmailBodyUtility = function() {
 		var values = haraka_obj[field] ? [haraka_obj[field]] : [];
 
 		// if there's no children then there's nohing further to check along this path
-		if (! haraka_obj.children || ! haraka_obj.children.length) {
+		if (!haraka_obj.children || !haraka_obj.children.length) {
 			_log_module && console.log(`${'\t'.repeat(depth)} [${index}] _getDistinctFieldValues(), for field '${field}', no children at current node of depth '${depth}'`);
 			return values;
 		}
@@ -486,7 +488,7 @@ const EmailBodyUtility = function() {
 		var i = 0;
 		// take the text from the first child that has it
 		while (i < haraka_obj.children.length) {
-			values = values.concat(_getDistinctFieldValues(haraka_obj.children[i++], field, depth+1, ++index))
+			values = values.concat(_getDistinctFieldValues(haraka_obj.children[i++], field, depth + 1, ++index))
 		}
 
 		return Array.from(new Set(values));
@@ -501,8 +503,8 @@ const EmailBodyUtility = function() {
 		var matching_child_node = null;
 		var i = 0;
 		// take first node that matches the requested message-type
-		while (! matching_child_node && i < num_children) {
-			matching_child_node = _getFirstNodeOfType(haraka_obj.children[i++], type, depth+1, ++index);
+		while (!matching_child_node && i < num_children) {
+			matching_child_node = _getFirstNodeOfType(haraka_obj.children[i++], type, depth + 1, ++index);
 		}
 
 		return matching_child_node || null;
@@ -517,7 +519,8 @@ const EmailBodyUtility = function() {
 
 		const _regex = /=\n/gm;
 
-		var fixed_body = body_text_encoded ? body_text_encoded.replace(/=\n/gm, '') : '';
+		var _body_string = body_text_encoded.toString('utf8');
+		var fixed_body = _body_string ? _body_string.replace(/=\n/gm, '') : '';
 
 		var formatted_body = null;
 		try {
@@ -533,7 +536,7 @@ const EmailBodyUtility = function() {
 	const _shortenText = function(text, max_print = 300) {
 
 		// if we're given no text or, it's not a string return as is
-		if (! text || (typeof text !== 'string' && typeof text !== 'object')) { return text; }
+		if (!text || (typeof text !== 'string' && typeof text !== 'object')) { return text; }
 
 		text = typeof text === 'string' ? text : JSON.stringify(text);
 
@@ -542,8 +545,8 @@ const EmailBodyUtility = function() {
 		max_print = max_print - 7; // for '... ...'.length
 
 		// if we have an odd number add the extra char to the front
-		var start_length = Math.round(max_print/2);
-		var end_length = Math.floor(max_print/2);
+		var start_length = Math.round(max_print / 2);
+		var end_length = Math.floor(max_print / 2);
 
 		if (text.length > max_print + 7) { return `'${text.substring(0, start_length)}... ...${text.substring(text.length - end_length)}'`; }
 		if (text.length > max_print + 6) { return `'${text.substring(0, start_length)}...${text.substring(text.length - (end_length-1))}'`; }
@@ -564,11 +567,11 @@ const EmailBodyUtility = function() {
 
 		// convert twitter handles
 		linkify.add('@', {
-			validate: function (text, pos, self) {
+			validate: function(text, pos, self) {
 				var tail = text.slice(pos);
 
 				if (!self.re.twitter) {
-					self.re.twitter =  new RegExp('^([a-zA-Z0-9_]){1,15}(?!_)(?=$|' + self.re.src_ZPCc + ')');
+					self.re.twitter = new RegExp('^([a-zA-Z0-9_]){1,15}(?!_)(?=$|' + self.re.src_ZPCc + ')');
 				}
 
 				if (self.re.twitter.test(tail)) {
@@ -580,7 +583,7 @@ const EmailBodyUtility = function() {
 
 				return 0;
 			},
-			normalize: function (match) {
+			normalize: function(match) {
 				match.url = 'https://twitter.com/' + match.url.replace(/^@/, '');
 			}
 		});
@@ -591,7 +594,7 @@ const EmailBodyUtility = function() {
 
 	const _getRfc822HtmlAndTextBody = function(body, callback) {
 
-		var rfc_body_info = { 'html' : '', 'text' : '' };
+		var rfc_body_info = { 'html': '', 'text': '' };
 
 		var rfc_822_node = _getFirstNodeOfType(body, 'message/rfc822');
 
@@ -606,7 +609,7 @@ const EmailBodyUtility = function() {
 					var content_type_index = headers.indexOf('Content-Type:');
 
 					// if we have a content_type, then the next index is the value
-					var content_type = content_type_index > -1 ? headers[content_type_index+1] : null;
+					var content_type = content_type_index > -1 ? headers[content_type_index + 1] : null;
 
 					// if we've encountered either content type, set it to collect the result
 					collect_html = content_type === 'text/html;'
@@ -631,7 +634,7 @@ const EmailBodyUtility = function() {
 		});
 
 		// callback when splitter's finish event is reached
-		splitter.on('finish', function () {
+		splitter.on('finish', function() {
 			return callback && callback(null, rfc_body_info);
 		});
 
