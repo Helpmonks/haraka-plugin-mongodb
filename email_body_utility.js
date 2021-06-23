@@ -325,14 +325,28 @@ const EmailBodyUtility = function() {
 				var bodytext_specified_encoding = haraka_obj.body_encoding ? haraka_obj.body_encoding.trim().toLowerCase() : null;
 
 				// bodytext encoding
-				var bodytext_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.bodytext));
-				// var bodytext_encoding = ced(Buffer.from(haraka_obj.bodytext));
+				var _body_text = haraka_obj.bodytext;
+				var bodytext_encoding = {};
+				if (_body_text) {
+					try {
+						bodytext_encoding = detectCharacterEncoding(Buffer.from(_body_text));
+					} catch(e) {}
+				}
+				// var bodytext_encoding = _body_text ? detectCharacterEncoding(Buffer.from(_body_text)) : {};
+				// var bodytext_encoding = _body_text ? ced(Buffer.from(_body_text)) : {};
 				var bodytext_encoding_normalized = bodytext_encoding.encoding ? bodytext_encoding.encoding.trim().toLowerCase() : null;
 				var does_specified_encoding_match_bodytext_encoding = bodytext_specified_encoding && bodytext_specified_encoding === bodytext_encoding_normalized;
 
 				// body_text_encoded encoding
-				var body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(haraka_obj.body_text_encoded));
-				// var body_text_encoded_encoding = ced(Buffer.from(haraka_obj.body_text_encoded));
+				var _body_text_encoded = haraka_obj.body_text_encoded;
+				var body_text_encoded_encoding = {};
+				if (_body_text_encoded) {
+					try {
+						body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(_body_text_encoded));
+					} catch(e) {}
+				}
+				// var body_text_encoded_encoding = _body_text_encoded ? detectCharacterEncoding(Buffer.from(_body_text_encoded)) : {};
+				// var body_text_encoded_encoding = _body_text_encoded ? ced(Buffer.from(_body_text_encoded)) : {};
 				var body_text_encoded_encoding_normalized = body_text_encoded_encoding.encoding ? body_text_encoded_encoding.encoding.trim().toLowerCase() : null;
 				var does_specified_encoding_match_body_text_encoded_encoding = bodytext_specified_encoding === body_text_encoded_encoding_normalized;
 
@@ -465,7 +479,7 @@ const EmailBodyUtility = function() {
 			body = body.replace(_iso_8859_charset_regex, 'text/html;');
 		}
 
-		// Windows-1252 or 1257 can appear in the html when the charset is ISO-8859-1 				
+		// Windows-1252 or 1257 can appear in the html when the charset is ISO-8859-1
 		if (_windows_charset_regex.test(body)) {
 			_log_module && console.log(`replacing Windows-1252 or -1257 charset directives, which are present in the html`);
 			body = body.replace(_windows_charset_regex, 'text/html;');
