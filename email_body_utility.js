@@ -5,7 +5,7 @@ const EmailBodyUtility = function() {
 	const linkify = require('linkify-it')();
 	// const ced = require('ced');
 	const Splitter = require('mailsplit').Splitter;
-	const detectCharacterEncoding = require('detect-character-encoding');
+	const detectCharacterEncoding = require('ced');
 
 	const quotedPrintable = require('quoted-printable');
 
@@ -465,7 +465,7 @@ const EmailBodyUtility = function() {
 			body = body.replace(_iso_8859_charset_regex, 'text/html;');
 		}
 
-		// Windows-1252 or 1257 can appear in the html when the charset is ISO-8859-1 				
+		// Windows-1252 or 1257 can appear in the html when the charset is ISO-8859-1
 		if (_windows_charset_regex.test(body)) {
 			_log_module && console.log(`replacing Windows-1252 or -1257 charset directives, which are present in the html`);
 			body = body.replace(_windows_charset_regex, 'text/html;');

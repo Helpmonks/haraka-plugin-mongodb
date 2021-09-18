@@ -1,3 +1,8 @@
+# not released
+
+- detect-character-encoding is not working on Alpine Linux 
+  so was replaced with ced
+
 # 1.8.1 - 2021-03-26
 
 - Changed the body utility to convert buffer to string (seems to fix an issue some users reported)
