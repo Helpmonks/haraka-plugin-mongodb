@@ -887,7 +887,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 	var is_tnef_attachment = false;
 
 	// Filter attachments starting with ~
-	attachments = attachments.filter(a => a.filename && a.filename.startsWith('~') ? false : true);
+	// attachments = attachments.filter(a => a.filename && a.filename.startsWith('~') ? false : true);
 
 	// If no attachment anymore
 	if (!attachments.length) return cb(null, mail_object);
@@ -966,6 +966,13 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			if ( attachment.contentType && attachment.contentType === 'message/delivery-status' ) {
 				attachment.fileName = 'delivery_status.txt';
 				attachment.generatedFileName = 'delivery_status.txt';
+			}
+
+			// If filename starts with ~
+			if ( attachment.fileName.startsWith('~') ) {
+				var _clean_filename = attachment.fileName.replace(/\~/g, '');
+				attachment.fileName = _clean_filename;
+				attachment.generatedFileName = _clean_filename;
 			}
 
 			// If filename is attachment.txt

@@ -1,11 +1,17 @@
+# 1.8.2 - 2021-12-15
+
+- We accept attachments that start with "~" now and convert the filename instead
+- Enhanced the body utility further to convert strings even better and faster
+- Updated all libraries
+
 # 1.8.1 - 2021-03-26
 
 - Changed the body utility to convert buffer to string (seems to fix an issue some users reported)
 
 # 1.8.0 - 2021-03-24
 
-- You now have the option to use Redis for the limit check! See the README for configuration.
-- Fixed an issue with the "include" limit param if used as an empty array.
+- You now have the option to use Redis for the limit check! See the README for configuration
+- Fixed an issue with the "include" limit param if used as an empty array
 - Updated libraries.
 
 # 1.7.0 - 2021-01-08
