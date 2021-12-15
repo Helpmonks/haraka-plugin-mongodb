@@ -2,6 +2,7 @@ const EmailBodyUtility = function() {
 	const stream = require('stream');
 
 	const async = require('async');
+	// const IsBase64 = require('is-base64');
 	const linkify = require('linkify-it')();
 	// const ced = require('ced');
 	const Splitter = require('mailsplit').Splitter;
@@ -19,6 +20,7 @@ const EmailBodyUtility = function() {
 
 	const _iso_8859_charset_regex = /text\/html; charset=iso-8859-\d/img;
 	const _windows_charset_regex = /text\/html;\s*charset=Windows-125(2|7)/img;
+	const _is_base64_encoded_regex = /^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{3}=|[A-Za-z\d+/]{2}==)?$/mg;
 
 	const _uses_windows_1257_charset = /charset=Windows-1257/im;
 	const _contains_html_invalid_unicode = /\x82/;
@@ -39,6 +41,10 @@ const EmailBodyUtility = function() {
 	const getHtmlAndTextBody = function(email_obj, body, options, callback = options) {
 		options = options && typeof options === 'object' ? options : {};
 		callback = typeof callback === 'function' ? callback : null;
+
+		// email_obj._doc && console.log('have body with email_obj:', Object.keys(email_obj._doc))
+		// ! email_obj._doc && console.log('have body with email_obj:', Object.keys(email_obj))
+		// console.log('have body with fields:', Object.keys(body))
 
 		var _specified_options = Object.keys(options);
 		if (_specified_options.includes('log_module')) { _log_module = !!options.log_module; }
@@ -153,7 +159,7 @@ const EmailBodyUtility = function() {
 		// use linkify to convert any links to <a>
 		var words = text.split(' ');
 
-		words = words.map((w) => {
+		words = words.map(w => {
 			// if there're no links return w as is
 			if (!linkify.test(w)) { return w; }
 
@@ -213,9 +219,35 @@ const EmailBodyUtility = function() {
 
 		var i = 0;
 		// if we're storing alternate bodies then loop over every field
-		while ((!field_value || options.store_alternates) && i < field_order.length) {
+		while ((! field_value || options.store_alternates) && i < field_order.length) {
 			var field = field_order[i++];
 			var result = getBodyByField(email_obj, body, field);
+
+			_log_module && console.log(`checking field '${field.toUpperCase()}', string: ${(result.body || '').substring(0,50)}...\n\n`);
+
+			var is_base64_encoded = false;
+			if (result.body && typeof result.body === 'string' && result.body.length) {
+
+				// only clear out a base64 encoded result if it's not the last field
+				if (i < field_order.length - 1) {
+					// only matches base64 strings ending with +, so trim down to the last plus to test
+					var string_body = result.body.replace(/\s/gm, '');
+					var last_plus_index = string_body.lastIndexOf('+');
+
+					if (last_plus_index !== -1) {
+						string_body = string_body.substring(0, last_plus_index + 1);
+						is_base64_encoded = _is_base64_encoded_regex.test(string_body);
+					}
+
+					// if it is base64 encoded set it to null so it can default choose the next best
+					if (is_base64_encoded) {
+						_log_module && console.log(`\n\nbase64 FOUND clearing field '${field.toUpperCase()}', string: ${string_body.substring(0,50)}...\n\n`);
+						result.body = null;
+					}
+
+					! is_base64_encoded && _log_module && console.log(`\n\nbase64 NOT FOUND for field'${field.toUpperCase()}', string: ${string_body.substring(0,50)}...\n\n`);
+				}
+			}
 
 			// if it's the first match, then it's the result
 			var is_result = !field_value && !!result.body;
