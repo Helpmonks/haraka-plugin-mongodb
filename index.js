@@ -72,7 +72,8 @@ exports.load_mongodb_ini = function () {
 		booleans: [
 			'+enable.queue.yes',
 			'+enable.delivery.yes',
-			'+limits.incoming.no'
+			'+limits.incoming.no',
+			'+mongodb.restart.yes'
 		]
 	},
 	function () {
@@ -382,6 +383,11 @@ exports.queue_to_mongodb = function(next, connection) {
 						plugin.logerror('--------------------------------------');
 						plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
 						plugin.logerror('--------------------------------------');
+						// Restart
+						if (plugin.cfg.mongodb && plugin.cfg.mongodb.restart === 'yes') {
+							_sendMessageBack('insert', plugin, _header, err);
+							throw 'MongoDB insert error';
+						}
 						// Send error
 						// _sendMessageBack('insert', plugin, _header, err);
 						// Return
@@ -798,21 +804,21 @@ function _createSmtpObject(plugin) {
 
 
 // Add to delivery log
-function _saveDeliveryResults(data_object, conn, plugin_object, callback) {
+function _saveDeliveryResults(data_object, conn, plugin, callback) {
 	// Catch if something is not defined
-	// if (!plugin_object || !plugin_object.cfc || plugin_object.cfg.collections) return callback && callback(null);
-	// if (!conn || !conn.collection) return callback && callback(null);
+	// if (!plugin || !plugin.cfc || plugin.cfg.collections) return callback && callback(null);
+	if (!conn || !conn.collection) return callback && callback(null);
 	// Save
-	conn.collection(plugin_object.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
+	conn.collection(plugin.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
 		if (err) {
-			plugin_object.logerror('--------------------------------------');
-			plugin_object.logerror('Error on insert into delivery : ', err);
-			plugin_object.logerror('--------------------------------------');
+			plugin.logerror('--------------------------------------');
+			plugin.logerror('Error on insert into delivery : ', err);
+			plugin.logerror('--------------------------------------');
 			return callback && callback(err);
 		} else {
-			plugin_object.lognotice('--------------------------------------');
-			plugin_object.lognotice(`Successfully stored the delivery log for message_id : ${data_object.message_id} !!! `);
-			plugin_object.lognotice('--------------------------------------');
+			plugin.lognotice('--------------------------------------');
+			plugin.lognotice(`Successfully stored the delivery log for message_id : ${data_object.message_id} !!! `);
+			plugin.lognotice('--------------------------------------');
 			return callback && callback(null);
 		}
 	});

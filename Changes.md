@@ -1,8 +1,11 @@
-# 1.8.2 - 2021-12-15
+# 1.8.2 - 2022-04-17
 
+- Added a new option "restart" to restart Haraka if there is an error on adding the email to the collection
 - We accept attachments that start with "~" now and convert the filename instead
 - Enhanced the body utility further to convert strings even better and faster
 - Updated all libraries
+- You can also use pnpm to get a much fast experience for updating libraries now :)
+- Tested with millions of emails and KeyDB (a drop-in replacement for Redis)
 
 # 1.8.1 - 2021-03-26
 
