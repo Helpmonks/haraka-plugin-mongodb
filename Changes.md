@@ -1,11 +1,20 @@
+# 1.8.2 - 2022-04-17
+
+- Added a new option "restart" to restart Haraka if there is an error on adding the email to the collection
+- We accept attachments that start with "~" now and convert the filename instead
+- Enhanced the body utility further to convert strings even better and faster
+- Updated all libraries
+- You can also use pnpm to get a much fast experience for updating libraries now :)
+- Tested with millions of emails and KeyDB (a drop-in replacement for Redis)
+
 # 1.8.1 - 2021-03-26
 
 - Changed the body utility to convert buffer to string (seems to fix an issue some users reported)
 
 # 1.8.0 - 2021-03-24
 
-- You now have the option to use Redis for the limit check! See the README for configuration.
-- Fixed an issue with the "include" limit param if used as an empty array.
+- You now have the option to use Redis for the limit check! See the README for configuration
+- Fixed an issue with the "include" limit param if used as an empty array
 - Updated libraries.
 
 # 1.7.0 - 2021-01-08
