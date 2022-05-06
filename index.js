@@ -34,11 +34,11 @@ exports.register = function () {
 	// Load on startup
 	plugin.register_hook('init_master', 'initialize_mongodb');
 	plugin.register_hook('init_child', 'initialize_mongodb');
-	plugin.register_hook('init_master', 'initialize_redis');
-	plugin.register_hook('init_child', 'initialize_redis');
 
 	// Enable for queue
 	if (plugin.cfg.enable.queue === 'yes') {
+		plugin.register_hook('init_master', 'initialize_redis');
+		plugin.register_hook('init_child', 'initialize_redis');
 		plugin.register_hook('data', 'enable_transaction_body_parse');
 		plugin.register_hook('queue', 'queue_to_mongodb');
 		// Define mime type
@@ -283,8 +283,8 @@ exports.queue_to_mongodb = function(next, connection) {
 			email.extracted_html_from = body_info.meta.html_source;
 			email.extracted_text_from = body_info.meta.text_source;
 			// Add html into email
-			email.html = body_info.html;
-			email.text = body_info.text;
+			email.html = _body_html || body_info.html;
+			email.text = _body_text || body_info.text;
 			// Check for inline images
 			_checkInlineImages(plugin, email, function(error, email) {
 				// Return

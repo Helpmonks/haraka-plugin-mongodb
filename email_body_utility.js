@@ -4,9 +4,9 @@ const EmailBodyUtility = function() {
 	const async = require('async');
 	// const IsBase64 = require('is-base64');
 	const linkify = require('linkify-it')();
-	// const ced = require('ced');
+	const ced = require('ced');
 	const Splitter = require('mailsplit').Splitter;
-	const detectCharacterEncoding = require('detect-character-encoding');
+	// const detectCharacterEncoding = require('detect-character-encoding');
 
 	const quotedPrintable = require('quoted-printable');
 
@@ -361,7 +361,8 @@ const EmailBodyUtility = function() {
 				var bodytext_encoding = {};
 				if (_body_text) {
 					try {
-						bodytext_encoding = detectCharacterEncoding(Buffer.from(_body_text));
+						bodytext_encoding = ced(Buffer.from(_body_text));
+						// bodytext_encoding = detectCharacterEncoding(Buffer.from(_body_text));
 					} catch(e) {}
 				}
 				// var bodytext_encoding = _body_text ? detectCharacterEncoding(Buffer.from(_body_text)) : {};
@@ -374,7 +375,8 @@ const EmailBodyUtility = function() {
 				var body_text_encoded_encoding = {};
 				if (_body_text_encoded) {
 					try {
-						body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(_body_text_encoded));
+						body_text_encoded_encoding = ced(Buffer.from(_body_text_encoded));
+						// body_text_encoded_encoding = detectCharacterEncoding(Buffer.from(_body_text_encoded));
 					} catch(e) {}
 				}
 				// var body_text_encoded_encoding = _body_text_encoded ? detectCharacterEncoding(Buffer.from(_body_text_encoded)) : {};
