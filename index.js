@@ -283,8 +283,8 @@ exports.queue_to_mongodb = function(next, connection) {
 			email.extracted_html_from = body_info.meta.html_source;
 			email.extracted_text_from = body_info.meta.text_source;
 			// Add html into email
-			email.html = _body_html || body_info.html;
-			email.text = _body_text || body_info.text;
+			email.html = body_info.html;
+			email.text = body_info.text;
 			// Check for inline images
 			_checkInlineImages(plugin, email, function(error, email) {
 				// Return

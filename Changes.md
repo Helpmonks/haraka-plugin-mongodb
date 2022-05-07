@@ -1,4 +1,4 @@
-# 1.8.3 - 2022-04-22
+# 1.8.3 - 2022-05-07
 
 - Updated email parser body
 - Fix for Redis/KeyDB crash when plugin is started as delivery only
