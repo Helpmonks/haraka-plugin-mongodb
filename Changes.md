@@ -1,3 +1,8 @@
+# 1.8.3 - 2022-05-07
+
+- Updated email parser body
+- Fix for Redis/KeyDB crash when plugin is started as delivery only
+
 # 1.8.2 - 2022-04-17
 
 - Added a new option "restart" to restart Haraka if there is an error on adding the email to the collection
