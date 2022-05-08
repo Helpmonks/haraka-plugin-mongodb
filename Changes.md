@@ -1,3 +1,7 @@
+# 1.8.4 - 2022-05-08
+
+- Disabled creation of index as it could throw error with different versions of MongoDB. Please create indexes according to your requirements.
+
 # 1.8.3 - 2022-05-07
 
 - Updated email parser body
