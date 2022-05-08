@@ -129,46 +129,46 @@ exports.initialize_mongodb = function (next, server) {
 			// Initiate a watch on the attachment path
 			_checkAttachmentPaths(plugin);
 			// Create Indexes
-			server.notes.mongodb.collection(plugin.cfg.collections.queue).createIndex([
-				{
-					'key' : { 'received_date' : 1 },
-					'background' : true
-				},
-				{
-					'key' : { 'received_date' : -1 },
-					'background' : true
-				},
-				{
-					'key' : { 'message_id' : 1 },
-					'background' : true
-				},
-				{
-					'key' : { 'transferred' : 1, 'status' : 1, 'received_date' : 1 },
-					'background' : true
-				},
-				{
-					'key' : { 'transferred' : 1, 'status' : 1, 'timestamp' : 1 },
-					'background' : true
-				},
-				{
-					'key' : { 'transferred' : 1, 'status' : 1, 'processed' : 1, 'timestamp' : 1 },
-					'background' : true
-				},
-			]);
+			// server.notes.mongodb.collection(plugin.cfg.collections.queue).createIndex([
+			// 	{
+			// 		'key' : { 'received_date' : 1 },
+			// 		'background' : true
+			// 	},
+			// 	{
+			// 		'key' : { 'received_date' : -1 },
+			// 		'background' : true
+			// 	},
+			// 	{
+			// 		'key' : { 'message_id' : 1 },
+			// 		'background' : true
+			// 	},
+			// 	{
+			// 		'key' : { 'transferred' : 1, 'status' : 1, 'received_date' : 1 },
+			// 		'background' : true
+			// 	},
+			// 	{
+			// 		'key' : { 'transferred' : 1, 'status' : 1, 'timestamp' : 1 },
+			// 		'background' : true
+			// 	},
+			// 	{
+			// 		'key' : { 'transferred' : 1, 'status' : 1, 'processed' : 1, 'timestamp' : 1 },
+			// 		'background' : true
+			// 	},
+			// ]);
 			// Limits
-			if ( plugin.cfg.limits.incoming === 'yes' && plugin.cfg.limits.db === 'mongodb' ) {
-				server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).createIndex([
-					{
-						'key' : { 'from' : 1, 'to' : 1 },
-						'background' : true
-					},
-					{
-						'key' : { 'timestamp' : 1 },
-						'background' : true,
-						'expireAfterSeconds' : parseInt(plugin.cfg.limits.incoming_seconds)
-					}
-				]);
-			}
+			// if ( plugin.cfg.limits.incoming === 'yes' && plugin.cfg.limits.db === 'mongodb' ) {
+			// 	server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).createIndex([
+			// 		{
+			// 			'key' : { 'from' : 1, 'to' : 1 },
+			// 			'background' : true
+			// 		},
+			// 		{
+			// 			'key' : { 'timestamp' : 1 },
+			// 			'background' : true,
+			// 			'expireAfterSeconds' : parseInt(plugin.cfg.limits.incoming_seconds)
+			// 		}
+			// 	]);
+			// }
 			next();
 		});
 	}
