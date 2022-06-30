@@ -939,6 +939,17 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 				}
 			}
 
+			// Check names for blocked attachments
+			if ( plugin.cfg.attachments.reject_by_name && plugin.cfg.attachments.reject_by_name.length && plugin.cfg.attachments.reject_by_name.includes(attachment.filename) ) {
+				plugin.loginfo('--------------------------------------');
+				plugin.loginfo('Following attachment is blocked:');
+				plugin.loginfo('filename : ', attachment.filename);
+				plugin.loginfo('contentType : ', attachment.contentType);
+				plugin.loginfo('--------------------------------------');
+				_attachments = _attachments.filter(a => a.checksum !== attachment.checksum);
+				return each_callback();
+			}
+
 			// Path to attachments dir
 			var attachments_folder_path = plugin.cfg.attachments.path;
 			// plugin.loginfo('attachments_folder_path : ', attachments_folder_path);

@@ -1,3 +1,7 @@
+# 1.8.5 - 2022-xx-xx
+
+- New: Define attachment names (entire name or part of the name) and it will be blocked. Check the mongodb.ini or README
+
 # 1.8.4 - 2022-05-08
 
 - Disabled creation of index as it could throw error with different versions of MongoDB. Please create indexes according to your requirements.
