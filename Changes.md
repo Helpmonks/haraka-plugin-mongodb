@@ -1,6 +1,7 @@
 # 1.8.5 - 2022-xx-xx
 
-- New: Define attachment names (entire name or part of the name) and it will be blocked. Check the mongodb.ini or README
+- New: Define attachment names (entire name or part of the name) and it will be blocked. Check the mongodb.ini or README.
+- Checking the limit of the message is done now only for incoming messages.
 
 # 1.8.4 - 2022-05-08
 

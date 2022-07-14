@@ -314,7 +314,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		var _store_raw = plugin.cfg.message && plugin.cfg.message.store_raw === 'yes' ? true : false;
 
 		// If we have a size limit
-		if (_size && plugin.cfg.message && plugin.cfg.message.limit) {
+		if (_size && plugin.cfg.message && plugin.cfg.message.limit && plugin.cfg.enable.delivery === 'yes') {
 			// If message is bigger than limit
 			if ( _size > parseInt(plugin.cfg.message.limit) ) {
 				_store_raw = false;
@@ -358,7 +358,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		};
 
 		// If we have a size limit
-		if (plugin.cfg.message && plugin.cfg.message.limit) {
+		if (plugin.cfg.message && plugin.cfg.message.limit && plugin.cfg.enable.delivery === 'yes') {
 			// Get size of email object
 			var _size_email_obj = JSON.stringify(_email).length;
 			// If message is bigger than limit
@@ -850,7 +850,7 @@ function parseSubaddress(user) {
 function _mp(plugin, connection, cb) {
 	// Options
 	var _options = { Iconv, 'skipImageLinks' : true };
-	if (plugin.cfg.message && plugin.cfg.message.limit) _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
+	if (plugin.cfg.message && plugin.cfg.message.limit && plugin.cfg.enable.delivery === 'yes') _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
 	// Parse
 	simpleParser(connection.transaction.message_stream, _options, (error, mail) => {
 		if ( mail && mail.attachments ) {
