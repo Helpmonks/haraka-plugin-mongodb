@@ -2,6 +2,7 @@
 
 - New: Define attachment names (entire name or part of the name) and it will be blocked. Check the mongodb.ini or README.
 - Checking the limit of the message is done now only for incoming messages.
+- Attachments file names that start with a "." (dot) are now saved with the checksum and extension as file name.
 
 # 1.8.4 - 2022-05-08
 

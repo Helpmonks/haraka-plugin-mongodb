@@ -985,6 +985,13 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 				attachment.generatedFileName = 'delivery_status.txt';
 			}
 
+			// If filename starts with .
+			if ( attachment.fileName.startsWith('.') ) {
+				var _file_name = `${attachment_checksum}${attachment.fileName}`;
+				attachment.fileName = _file_name;
+				attachment.generatedFileName = _file_name;
+			}
+
 			// If filename starts with ~
 			if ( attachment.fileName.startsWith('~') ) {
 				var _clean_filename = attachment.fileName.replace(/\~/g, '');
