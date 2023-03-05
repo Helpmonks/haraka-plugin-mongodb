@@ -688,35 +688,21 @@ function _limitIncoming(plugin, email_headers, cb) {
 	// Make sure we got the email address
 	_from = _from.map(t => t.address || t)[0];
 	// Clean from
-	_from = _from.replace(/<|>/gm, '');
-	// TO
-	_to = _to.map(t => t.address || t);
+	_from = _from.replace(/<|>/gm, '').toLowerCase();
 	// Check excludes
-	var _from_split = _from.split('@');
-	// plugin.lognotice("_from_split", _from_split);
-	if ( plugin.cfg.limits.exclude.includes(_from_split[1]) ) {
-		// plugin.lognotice("Exclude: ", _from);
+	var _limit_exclude = plugin.cfg.limits.exclude || [];
+	var _found_exlude_value = _limit_exclude.find(n => _from.includes(n));
+	if (_found_exlude_value) {
 		return cb(null, null);
 	}
 	// Check include
-	var _check = true;
 	var _limit_include = plugin.cfg.limits.include || [];
-	// _limit_include = JSON.parse(_limit_include);
-	// Include has values
-	if ( _limit_include.length && _limit_include.includes(_from_split[1]) ) {
-		_check = true;
-	}
-	else {
-		_check = false;
-	}
-	// Include is empty
-	if ( !_limit_include.length ) {
-		_check = true;
-	}
-	// Return depending on check
-	if (!_check) {
+	var _found_include_value = _limit_include.find(n => _from.includes(n));
+	if (!_found_include_value) {
 		return cb(null, null);
 	}
+	// TO
+	_to = _to.map(t => t.address || t);
 	// Which db
 	var _is_mongodb = plugin.cfg.limits.db === 'mongodb' ? true : false;
 	// Loop

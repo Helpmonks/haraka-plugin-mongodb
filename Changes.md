@@ -1,8 +1,10 @@
-# 1.8.5 - 2022-xx-xx
+# 1.8.5 - 2023-03-05
 
+- New & Breaking change: Check for too many emails has been changed to containing the exclude and/or include value. Read the README.
 - New: Define attachment names (entire name or part of the name) and it will be blocked. Check the mongodb.ini or README.
 - Checking the limit of the message is done now only for incoming messages.
 - Attachments file names that start with a "." (dot) are now saved with the checksum and extension as file name.
+- Fix: Check for too many emails within a specific time did not work with include.
 
 # 1.8.4 - 2022-05-08
 
@@ -59,7 +61,7 @@
 # 1.6.5 - 2020-10-18
 
 - NEW: We've added an option to limit incoming emails. Please see README
-- We are now creating indexes for our collections 
+- We are now creating indexes for our collections
 - Returning a "DENY" if the message is larger than 16MB
 - Returning a "DENY" if the message cannot be parsed
 - Updated libraries
@@ -85,7 +87,7 @@
 
 - You can now use a mongodb:// connection string with the new string value
 - There is now a new "limit" option as you cannot insert more that 16 MB documents into MongoDB
-- You can now send back emails to the sender on limits, parsing, and insert errors 
+- You can now send back emails to the sender on limits, parsing, and insert errors
 - Improved performance for parsing inline images
 - Added custom content type to extend what attachments Haraka should accept as valid files. Otherwise the attachment is renamed to (filename).txt
 - Removed some content types from the default reject string
@@ -150,7 +152,7 @@
 
 # 1.4.8 - 2019-12-05
 
-- The filename of files within a winmail.dat are now cleaned up as well (surprisingly a lot of people are still sending those) 
+- The filename of files within a winmail.dat are now cleaned up as well (surprisingly a lot of people are still sending those)
 
 # 1.4.7 - 2019-12-04
 
