@@ -314,7 +314,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		var _store_raw = plugin.cfg.message && plugin.cfg.message.store_raw === 'yes' ? true : false;
 
 		// If we have a size limit
-		if (_size && plugin.cfg.message && plugin.cfg.message.limit) {
+		if (_size && plugin.cfg.message && plugin.cfg.message.limit && plugin.cfg.enable.delivery === 'yes') {
 			// If message is bigger than limit
 			if ( _size > parseInt(plugin.cfg.message.limit) ) {
 				_store_raw = false;
@@ -358,7 +358,7 @@ exports.queue_to_mongodb = function(next, connection) {
 		};
 
 		// If we have a size limit
-		if (plugin.cfg.message && plugin.cfg.message.limit) {
+		if (plugin.cfg.message && plugin.cfg.message.limit && plugin.cfg.enable.delivery === 'yes') {
 			// Get size of email object
 			var _size_email_obj = JSON.stringify(_email).length;
 			// If message is bigger than limit
@@ -688,35 +688,21 @@ function _limitIncoming(plugin, email_headers, cb) {
 	// Make sure we got the email address
 	_from = _from.map(t => t.address || t)[0];
 	// Clean from
-	_from = _from.replace(/<|>/gm, '');
-	// TO
-	_to = _to.map(t => t.address || t);
+	_from = _from.replace(/<|>/gm, '').toLowerCase();
 	// Check excludes
-	var _from_split = _from.split('@');
-	// plugin.lognotice("_from_split", _from_split);
-	if ( plugin.cfg.limits.exclude.includes(_from_split[1]) ) {
-		// plugin.lognotice("Exclude: ", _from);
+	var _limit_exclude = plugin.cfg.limits.exclude || [];
+	var _found_exlude_value = _limit_exclude.find(n => _from.includes(n));
+	if (_found_exlude_value) {
 		return cb(null, null);
 	}
 	// Check include
-	var _check = true;
 	var _limit_include = plugin.cfg.limits.include || [];
-	_limit_include = JSON.parse(_limit_include);
-	// Include has values
-	if ( _limit_include.length && _limit_include.includes(_from_split[1]) ) {
-		_check = true;
-	}
-	else {
-		_check = false;
-	}
-	// Include is empty
-	if ( !_limit_include.length ) {
-		_check = true;
-	}
-	// Return depending on check
-	if (!_check) {
+	var _found_include_value = _limit_include.find(n => _from.includes(n));
+	if (!_found_include_value) {
 		return cb(null, null);
 	}
+	// TO
+	_to = _to.map(t => t.address || t);
 	// Which db
 	var _is_mongodb = plugin.cfg.limits.db === 'mongodb' ? true : false;
 	// Loop
@@ -850,7 +836,7 @@ function parseSubaddress(user) {
 function _mp(plugin, connection, cb) {
 	// Options
 	var _options = { Iconv, 'skipImageLinks' : true };
-	if (plugin.cfg.message && plugin.cfg.message.limit) _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
+	if (plugin.cfg.message && plugin.cfg.message.limit && plugin.cfg.enable.delivery === 'yes') _options.maxHtmlLengthToParse = plugin.cfg.message.limit;
 	// Parse
 	simpleParser(connection.transaction.message_stream, _options, (error, mail) => {
 		if ( mail && mail.attachments ) {
@@ -939,6 +925,17 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 				}
 			}
 
+			// Check names for blocked attachments
+			if ( plugin.cfg.attachments.reject_by_name && plugin.cfg.attachments.reject_by_name.length && plugin.cfg.attachments.reject_by_name.includes(attachment.filename) ) {
+				plugin.loginfo('--------------------------------------');
+				plugin.loginfo('Following attachment is blocked:');
+				plugin.loginfo('filename : ', attachment.filename);
+				plugin.loginfo('contentType : ', attachment.contentType);
+				plugin.loginfo('--------------------------------------');
+				_attachments = _attachments.filter(a => a.checksum !== attachment.checksum);
+				return each_callback();
+			}
+
 			// Path to attachments dir
 			var attachments_folder_path = plugin.cfg.attachments.path;
 			// plugin.loginfo('attachments_folder_path : ', attachments_folder_path);
@@ -972,6 +969,13 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			if ( attachment.contentType && attachment.contentType === 'message/delivery-status' ) {
 				attachment.fileName = 'delivery_status.txt';
 				attachment.generatedFileName = 'delivery_status.txt';
+			}
+
+			// If filename starts with .
+			if ( attachment.fileName.startsWith('.') ) {
+				var _file_name = `${attachment_checksum}${attachment.fileName}`;
+				attachment.fileName = _file_name;
+				attachment.generatedFileName = _file_name;
 			}
 
 			// If filename starts with ~

@@ -38,9 +38,9 @@ Copy the mongodb.ini from the config directory (haraka-plugin-mongodb/config) to
 
 Provide your credentials to connect to your MongoDB instance.
 
-As of version 1.6.2 you can also define a mongodb connection string directly using the "string" value. This has to be a valid [mongodb connection string](https://docs.mongodb.com/manual/reference/connection-string). If you define a connection string, only the connection string will be used for the connection. 
+As of version 1.6.2 you can also define a mongodb connection string directly using the "string" value. This has to be a valid [mongodb connection string](https://docs.mongodb.com/manual/reference/connection-string). If you define a connection string, only the connection string will be used for the connection.
 
-Please note that the mongodb connection is used for both the delivery and the queue. If you want to store the queue in another database you should use a separate queue and a delivery instance. 
+Please note that the mongodb connection is used for both the delivery and the queue. If you want to store the queue in another database you should use a separate queue and a delivery instance.
 
 ## Section: Collections
 
@@ -57,6 +57,9 @@ This plugin comes now with a built-in check to make sure your attachment path is
 
 ### Attachment reject (new as of 1.6.1)
 Enter the attachments content type that should be rejected. The default ones are the most common file types that should never be accepted by any file system. Feel free to adjust. It's an array with content type strings.
+
+### Attachment reject by name (new as of 1.8.5)
+Enter the attachments name that should be rejected. Enter the entire filename or only part of the name. Feel free to adjust. It's an array with content type strings.
 
 ### Extend content types (new as of 1.6.2)
 As of 1.6.1 we test each attachment for the proper content type and get the correct extension. Sometimes you might want to extend that with your own content types. With the new "custom_content_type" setting you can do that now. Within the mongodb.ini simply extend the map with your own custom types. The format is, 'content/type' : ['extension'] and you comma separate each content type.
@@ -83,9 +86,20 @@ Enter your SMTP server values and FROM, CC, and BCC for sending an alert email t
 
 Enabling the limits for incoming emails will check the FROM and the TO email-address of incoming email and send back a "softdeny" if found. The time amount is set in the "timeout_seconds" setting. By default this is set to 10 seconds. In our experience, we've seen that this will throttle most automated systems, while emails from users are coming in without delays.
 
-Use the "exclude" (empty array) settings to never throttle emails from a certain domain.
+Use the "exclude" settings to never throttle emails from a certain domain.
 
-As of 1.7.0 you can also use the "include" (empty array) setting to only include certain domains in the check. An empty array means to check for all incoming emails, one or many values mean to only check for those domains.
+
+---
+### Breaking change as of 1.8.5
+
+The exclude and include values check if the word is found within the senders email address. Previously, it was only checking the email domain. This allows you to exclude certain words and/or include words. The default config file now includes some sane values to check now (though, as long as the limit check is disabled nothing it will not check for anything).
+
+Please also note, that the format of the exclude and include params has changed! If you use the limit check, please change your config values first.
+
+---
+
+
+As of 1.7.0 you can also use the "include" setting to only include certain domains in the check. An empty array means to check for all incoming emails, one or many values mean to only check for those domains.
 
 As of 1.8.0 there is a new parameter called "db" that lets you use Redis as an alternative to MongoDB. This is helpful if you get thousands of emails and want to save on the constant MongoDB connections. Besides, the MongoDB TTL is not accurate enough and Redis is made for such a use case. Set db=redis to use Redis instead of db=mongodb.
 
