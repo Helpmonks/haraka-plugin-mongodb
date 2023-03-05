@@ -701,7 +701,7 @@ function _limitIncoming(plugin, email_headers, cb) {
 	// Check include
 	var _check = true;
 	var _limit_include = plugin.cfg.limits.include || [];
-	_limit_include = JSON.parse(_limit_include);
+	// _limit_include = JSON.parse(_limit_include);
 	// Include has values
 	if ( _limit_include.length && _limit_include.includes(_from_split[1]) ) {
 		_check = true;
