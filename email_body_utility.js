@@ -355,7 +355,15 @@ const EmailBodyUtility = function() {
 
 				// grab each of the available values
 				var bodytext = haraka_obj.bodytext;
-				var haraka_body_text_encoded = _formatQuotedPrintableBody(haraka_obj.body_text_encoded);
+
+				// haraka_obj.body_text_encoded is of type Buffer since 2.8.26 and of type String before this version
+				var _haraka_body_text_encoded = '';
+				if (haraka_obj.body_text_encoded instanceof Buffer) {
+					_haraka_body_text_encoded = haraka_obj.body_text_encoded.slice(0, haraka_obj.body_text_encoded_pos).toString('binary');
+				} else {
+					_haraka_body_text_encoded = haraka_obj.body_text_encoded;
+				}
+				var haraka_body_text_encoded = _formatQuotedPrintableBody(_haraka_body_text_encoded);
 
 				// set has_valid_encoding
 				has_valid_encoding = !!haraka_obj.body_encoding && !haraka_obj.body_encoding.includes('broken') && !!haraka_obj.bodytext;
