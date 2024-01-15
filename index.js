@@ -294,6 +294,15 @@ exports.queue_to_mongodb = function(next, connection) {
 	],
 	function (error, email_object) {
 
+		var _aruba = _header.headers_decoded.from && _header.headers_decoded.from[0];
+
+		if (_aruba && _aruba === 'no-reply@arubanetworks.com') {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror(' MESSAGE REJECTED FROM no-reply@arubanetworks.com');
+			plugin.logerror('--------------------------------------');
+			return next(DENYDISCONNECT, "TOO MANY EMAILS");
+		}
+
 		// For limit
 		if (error === 'limit') {
 			// plugin.lognotice('--------------------------------------');
