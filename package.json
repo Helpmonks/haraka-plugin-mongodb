@@ -35,25 +35,25 @@
     "detect-character-encoding": "^0.9.0",
     "fs-extra": "^10.1.0",
     "iconv": "^3.0.1",
-    "ioredis": "^5.3.2",
+    "ioredis": "^5.4.1",
     "linkify-it": "^3.0.3",
-    "mailparser": "^3.6.6",
+    "mailparser": "^3.7.1",
     "mailsplit": "^5.4.0",
     "mime": "^3.0.0",
     "moment": "^2.30.1",
     "mongodb": "^4.17.2",
-    "node-gyp": "^10.0.1",
-    "nodemailer": "^6.9.8",
+    "node-gyp": "^10.1.0",
+    "nodemailer": "^6.9.13",
     "quoted-printable": "^1.0.1",
     "string": "^3.3.3",
-    "tlds": "^1.248.0",
+    "tlds": "^1.252.0",
     "uuid": "^8.3.2",
     "watch": "^1.0.2"
   },
   "devDependencies": {
-    "eslint": "^8.56.0",
-    "eslint-plugin-haraka": "^1.0.15",
-    "haraka-test-fixtures": "^1.3.3",
-    "mocha": "^10.2.0"
+    "eslint": "^8.57.0",
+    "eslint-plugin-haraka": "^1.0.16",
+    "haraka-test-fixtures": "^1.3.7",
+    "mocha": "^10.4.0"
   }
 }
