@@ -3,6 +3,7 @@
 // Made by Helpmonks - http://helpmonks.com
 
 // Require
+const os = require('os');
 const mongoc = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 const async = require('async');
@@ -294,6 +295,15 @@ exports.queue_to_mongodb = function(next, connection) {
 	],
 	function (error, email_object) {
 
+		var _aruba = _header.headers_decoded.from && _header.headers_decoded.from[0];
+
+		if (_aruba && _aruba === 'no-reply@arubanetworks.com') {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror(' MESSAGE REJECTED FROM no-reply@arubanetworks.com');
+			plugin.logerror('--------------------------------------');
+			return next(DENYDISCONNECT, "TOO MANY EMAILS");
+		}
+
 		// For limit
 		if (error === 'limit') {
 			// plugin.lognotice('--------------------------------------');
@@ -530,13 +540,15 @@ exports.bounced_email = function(next, hmail, error) {
 		};
 		// Save
 		_saveDeliveryResults(_data, server.notes.mongodb, plugin);
+		// No reason not to send an error message
+		next();
 		// Send bounce message or not
-		if ( record && record.length ) {
-			return next(OK);
-		}
-		else {
-			return next();
-		}
+		// if ( record && record.length ) {
+		// 	return next(OK);
+		// }
+		// else {
+		// 	return next();
+		// }
 	});
 };
 
@@ -630,16 +642,16 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	var _message_id = email_headers.headers_decoded && email_headers.headers_decoded['message-id'] || email_headers['message-id'] || email_headers['Message-ID'] || null;
 	// FROM
 	var _from = plugin.cfg.smtp.from;
-	var _from_split = _from.split('@');
+	// var _from_split = _from.split('@');
 	// Do not send a message to any root or java or other names
 	if (_message_id) {
 		var _message_id_lc = _message_id.toLowerCase();
-		if ( _message_id_lc.includes('postmaster') || _message_id_lc.includes('root') || _message_id_lc.includes('javamail') || _message_id_lc.includes('daemon') || _message_id_lc.includes('server') || _message_id_lc.includes('notreply') || _message_id_lc.includes('not-reply') || _message_id_lc.includes('not_reply') || _message_id_lc.includes('no-reply') || _message_id_lc.includes('noreply') || _message_id_lc.includes('no_reply') || _message_id_lc.includes(_from_split[1]) ) {
+		if ( _message_id_lc.includes('postmaster') || _message_id_lc.includes('root') || _message_id_lc.includes('javamail') || _message_id_lc.includes('daemon') || _message_id_lc.includes('server') || _message_id_lc.includes('notreply') || _message_id_lc.includes('not-reply') || _message_id_lc.includes('not_reply') || _message_id_lc.includes('no-reply') || _message_id_lc.includes('noreply') || _message_id_lc.includes('no_reply') ) {
 			return;
 		}
 	}
 	// Do not set to certain email addresses
-	if ( _to.includes('postmaster') || _to.includes('root') || _to.includes('javamail') || _to.includes('daemon') || _to.includes('server') || _to.includes('notreply') || _to.includes('noreply') || _to.includes('not-reply') || _to.includes('not_reply') || _to.includes('no_reply') || _to.includes('no-reply') || _to.includes(_from_split[1]) ) {
+	if ( _to.includes('postmaster') || _to.includes('root') || _to.includes('javamail') || _to.includes('daemon') || _to.includes('server') || _to.includes('notreply') || _to.includes('noreply') || _to.includes('not-reply') || _to.includes('not_reply') || _to.includes('no_reply') || _to.includes('no-reply') ) {
 		return;
 	}
 	// Subject
@@ -794,6 +806,7 @@ function _saveDeliveryResults(data_object, conn, plugin, callback) {
 	// Catch if something is not defined
 	// if (!plugin || !plugin.cfc || plugin.cfg.collections) return callback && callback(null);
 	if (!conn || !conn.collection) return callback && callback(null);
+	data_object.hostname = os.hostname();
 	// Save
 	conn.collection(plugin.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
 		if (err) {
