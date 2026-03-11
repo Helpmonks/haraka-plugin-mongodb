@@ -1,3 +1,8 @@
+# 1.8.6 - 2024-05-14
+
+- Reponse updates and small fixes
+- Library updates
+
 # 1.8.5 - 2023-03-05
 
 - New & Breaking change: Check for too many emails has been changed to containing the exclude and/or include value. Read the README.
