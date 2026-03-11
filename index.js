@@ -3,6 +3,7 @@
 // Made by Helpmonks - http://helpmonks.com
 
 // Require
+const os = require('os');
 const mongoc = require('mongodb').MongoClient;
 const ObjectID = require('mongodb').ObjectID;
 const async = require('async');
@@ -268,6 +269,27 @@ exports.queue_to_mongodb = function(next, connection) {
 			});
 		},
 		function (email, waterfall_callback) {
+			// Fix: simpleParser does not read charset from HTML meta tags.
+			// When the MIME part omits charset, non-UTF-8 content (e.g. ISO-8859-1) gets
+			// decoded as UTF-8, producing U+FFFD replacement characters.
+			// Detect the charset from HTML meta tags and re-decode from Haraka's raw body.
+			if (_body_html && /\uFFFD/.test(_body_html)) {
+				var fixedHtml = _fixCharsetFromMetaTag(_body_html, body, plugin);
+				if (fixedHtml) {
+					_body_html = fixedHtml;
+					email.html = fixedHtml;
+				}
+			}
+			if (_body_text && /\uFFFD/.test(_body_text)) {
+				var fixedText = _fixCharsetFromMetaTag(_body_text, body, plugin, 'text/plain');
+				if (fixedText) {
+					_body_text = fixedText;
+					email.text = fixedText;
+				}
+			}
+			return waterfall_callback(null, email);
+		},
+		function (email, waterfall_callback) {
 			// Get proper body
 			EmailBodyUtility.getHtmlAndTextBody(email, body, function (error, html_and_text_body_info) {
 				if (error || ! html_and_text_body_info) {
@@ -293,6 +315,15 @@ exports.queue_to_mongodb = function(next, connection) {
 		}
 	],
 	function (error, email_object) {
+
+		var _aruba = _header.headers_decoded.from && _header.headers_decoded.from[0];
+
+		if (_aruba && _aruba === 'no-reply@arubanetworks.com') {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror(' MESSAGE REJECTED FROM no-reply@arubanetworks.com');
+			plugin.logerror('--------------------------------------');
+			return next(DENYDISCONNECT, "TOO MANY EMAILS");
+		}
 
 		// For limit
 		if (error === 'limit') {
@@ -530,13 +561,15 @@ exports.bounced_email = function(next, hmail, error) {
 		};
 		// Save
 		_saveDeliveryResults(_data, server.notes.mongodb, plugin);
+		// No reason not to send an error message
+		next();
 		// Send bounce message or not
-		if ( record && record.length ) {
-			return next(OK);
-		}
-		else {
-			return next();
-		}
+		// if ( record && record.length ) {
+		// 	return next(OK);
+		// }
+		// else {
+		// 	return next();
+		// }
 	});
 };
 
@@ -630,16 +663,16 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	var _message_id = email_headers.headers_decoded && email_headers.headers_decoded['message-id'] || email_headers['message-id'] || email_headers['Message-ID'] || null;
 	// FROM
 	var _from = plugin.cfg.smtp.from;
-	var _from_split = _from.split('@');
+	// var _from_split = _from.split('@');
 	// Do not send a message to any root or java or other names
 	if (_message_id) {
 		var _message_id_lc = _message_id.toLowerCase();
-		if ( _message_id_lc.includes('postmaster') || _message_id_lc.includes('root') || _message_id_lc.includes('javamail') || _message_id_lc.includes('daemon') || _message_id_lc.includes('server') || _message_id_lc.includes('notreply') || _message_id_lc.includes('not-reply') || _message_id_lc.includes('not_reply') || _message_id_lc.includes('no-reply') || _message_id_lc.includes('noreply') || _message_id_lc.includes('no_reply') || _message_id_lc.includes(_from_split[1]) ) {
+		if ( _message_id_lc.includes('postmaster') || _message_id_lc.includes('root') || _message_id_lc.includes('javamail') || _message_id_lc.includes('daemon') || _message_id_lc.includes('server') || _message_id_lc.includes('notreply') || _message_id_lc.includes('not-reply') || _message_id_lc.includes('not_reply') || _message_id_lc.includes('no-reply') || _message_id_lc.includes('noreply') || _message_id_lc.includes('no_reply') ) {
 			return;
 		}
 	}
 	// Do not set to certain email addresses
-	if ( _to.includes('postmaster') || _to.includes('root') || _to.includes('javamail') || _to.includes('daemon') || _to.includes('server') || _to.includes('notreply') || _to.includes('noreply') || _to.includes('not-reply') || _to.includes('not_reply') || _to.includes('no_reply') || _to.includes('no-reply') || _to.includes(_from_split[1]) ) {
+	if ( _to.includes('postmaster') || _to.includes('root') || _to.includes('javamail') || _to.includes('daemon') || _to.includes('server') || _to.includes('notreply') || _to.includes('noreply') || _to.includes('not-reply') || _to.includes('not_reply') || _to.includes('no_reply') || _to.includes('no-reply') ) {
 		return;
 	}
 	// Subject
@@ -794,6 +827,7 @@ function _saveDeliveryResults(data_object, conn, plugin, callback) {
 	// Catch if something is not defined
 	// if (!plugin || !plugin.cfc || plugin.cfg.collections) return callback && callback(null);
 	if (!conn || !conn.collection) return callback && callback(null);
+	data_object.hostname = os.hostname();
 	// Save
 	conn.collection(plugin.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
 		if (err) {
@@ -831,6 +865,89 @@ function parseSubaddress(user) {
 		parsed.subaddress = user.split('+')[1];
 	}
 	return parsed;
+}
+
+// Recursively find a MIME body part of the given type in the Haraka body tree
+function _findBodyPart(node, type) {
+	if (!node) return null;
+	if (node.ct && node.ct.toLowerCase().includes(type) && (node.bodytext || node.body_text_encoded)) {
+		return node;
+	}
+	if (node.children) {
+		for (var i = 0; i < node.children.length; i++) {
+			var found = _findBodyPart(node.children[i], type);
+			if (found) return found;
+		}
+	}
+	return null;
+}
+
+// Fix HTML/text that was corrupted by simpleParser defaulting to UTF-8 when
+// the MIME part has no charset but the HTML meta tag declares one (e.g. ISO-8859-1).
+// Uses the raw body from Haraka's body tree and re-decodes with the correct charset.
+function _fixCharsetFromMetaTag(content, harakaBody, plugin, mimeType) {
+	mimeType = mimeType || 'text/html';
+	try {
+		// Detect charset from HTML meta tag or content-type meta
+		var charsetMatch = content.match(/charset=["']?([\w-]+)/i);
+		if (!charsetMatch) return null;
+
+		var charset = charsetMatch[1].toLowerCase();
+		if (charset === 'utf-8' || charset === 'utf8') return null;
+
+		// Find the matching part in the Haraka body tree
+		var part = _findBodyPart(harakaBody, mimeType);
+		if (!part) return null;
+
+		// Check if the MIME content-type already has charset (then simpleParser should have handled it)
+		var partCt = part.ct ? part.ct.toLowerCase() : '';
+		if (partCt.includes('charset=')) return null;
+
+		var rawBuffer = part.body_text_encoded;
+		if (!rawBuffer || !Buffer.isBuffer(rawBuffer)) return null;
+
+		// Determine transfer encoding from the MIME part headers
+		var cte = '';
+		if (part.header && part.header.headers && part.header.headers['content-transfer-encoding']) {
+			cte = Array.isArray(part.header.headers['content-transfer-encoding'])
+				? part.header.headers['content-transfer-encoding'][0]
+				: part.header.headers['content-transfer-encoding'];
+			cte = cte.trim().toLowerCase();
+		}
+
+		var rawBytes;
+		if (cte === 'quoted-printable') {
+			// QP decode: convert buffer to binary string, strip soft breaks, decode =XX to bytes
+			var rawStr = rawBuffer.toString('binary');
+			var cleaned = rawStr.replace(/[\t ]+$/gm, '').replace(/=\r?\n/g, '');
+			var decoded = cleaned.replace(/=([0-9A-Fa-f]{2})/g, function(_, hex) {
+				return String.fromCharCode(parseInt(hex, 16));
+			});
+			rawBytes = Buffer.from(decoded, 'binary');
+		}
+		else if (cte === 'base64') {
+			// Base64 decode
+			rawBytes = Buffer.from(rawBuffer.toString('ascii').replace(/\s/g, ''), 'base64');
+		}
+		else {
+			// 7bit / 8bit / binary — raw bytes are already in the buffer
+			rawBytes = rawBuffer;
+		}
+
+		// Convert from the detected charset to UTF-8 using native iconv
+		var converter = new Iconv(charset, 'UTF-8//IGNORE');
+		var utf8Result = converter.convert(rawBytes).toString('utf-8');
+
+		plugin.lognotice('--------------------------------------');
+		plugin.lognotice('Fixed charset from HTML meta tag: ' + charset + ' -> UTF-8 for ' + mimeType);
+		plugin.lognotice('--------------------------------------');
+
+		return utf8Result;
+	}
+	catch (e) {
+		plugin.logerror('Error in _fixCharsetFromMetaTag: ' + e.message);
+		return null;
+	}
 }
 
 function _mp(plugin, connection, cb) {
