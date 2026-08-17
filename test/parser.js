@@ -1,11 +1,16 @@
 const simpleParser = require('mailparser').simpleParser;
+const assert = require('assert');
 const fs = require('fs-extra');
+const path = require('path');
 
+describe('mailparser compatibility', function () {
+	this.timeout(10000);
 
-const source_haraka = fs.readFileSync('./test_data/test_haraka_body.json');
-const source_file = fs.readFileSync('./test_data/test.eml');
-
-simpleParser(source_file, {}, (err, parsed) => {
-	console.log("err", err);
-	console.log("parsed", parsed);
+	it('parses the full email fixture', async function () {
+		var source = await fs.readFile(path.join(__dirname, 'test_data', 'test.eml'));
+		var parsed = await simpleParser(source);
+		assert.ok(parsed);
+		assert.ok(parsed.headers instanceof Map);
+		assert.ok(Array.isArray(parsed.attachments));
+	});
 });

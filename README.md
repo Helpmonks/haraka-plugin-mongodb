@@ -8,10 +8,10 @@ This plugin has been tested with over 500,000 incoming and outgoing emails a day
 
 # Installation
 
-Depending on your operating system, you might first have to install python, make, and compiler, e.g.:
+Depending on your operating system, you might first have to install Python 3, make, and a compiler, e.g.:
 
 ```
-apt install python2 make cmake g++ build-essentials
+apt install python3 make cmake g++ build-essential
 ```
 
 In order to store winmail.dat files (yes some people are still using those) you need to also install tnef with:
@@ -62,7 +62,7 @@ Enter the attachments content type that should be rejected. The default ones are
 Enter the attachments name that should be rejected. Enter the entire filename or only part of the name. Feel free to adjust. It's an array with content type strings.
 
 ### Extend content types (new as of 1.6.2)
-As of 1.6.1 we test each attachment for the proper content type and get the correct extension. Sometimes you might want to extend that with your own content types. With the new "custom_content_type" setting you can do that now. Within the mongodb.ini simply extend the map with your own custom types. The format is, 'content/type' : ['extension'] and you comma separate each content type.
+As of 1.6.1 we test each attachment for the proper content type and get the correct extension. Sometimes you might want to extend that with your own content types. With the new "custom_content_type" setting you can do that now. Within the mongodb.ini simply extend the JSON map with your own custom types. The format is `{"content/type":["extension"]}`; separate multiple content types with commas.
 
 ### Convert inline images (new as of 1.4.0)
 You can set if you want to convert inline images or not. Following options are available:
@@ -121,17 +121,11 @@ port=6379
 
 ### Compatibility
 
-This plugin has been tested with Nodejs v12 and MongoDB 4.4.x (it worked in the past with Nodejs v8.x and MongoDB 3.x)
+This plugin requires Node.js 20.19.0 or newer. The Compose test suite verifies Node.js 24 with MongoDB 8 and Redis 8.
 
-# Installation issues with iconv and node-gyp
+# Native charset dependencies
 
-You might run into issues with iconv and node-gyp installation. Our suggested workaround is to use:
-
-```
-npm -g config set user root
-```
-
-and then install node-gyp globally and reinstall Haraka. Hope this helps.
+`iconv` and `detect-character-encoding` compile during installation, so Python 3, make, and a C/C++ compiler must be available. Do not install `node-gyp` globally. The repository's pnpm configuration approves only these two native builds.
 
 # Issues
 
@@ -144,4 +138,3 @@ Pull-requests are welcomed! Development takes place in the "develop" branch. Hen
 # Version History
 
 A version history with all changes [is also available](https://github.com/Helpmonks/haraka-plugin-mongodb/blob/master/Changes.md)
-

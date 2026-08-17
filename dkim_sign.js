@@ -50,7 +50,7 @@ class DKIMSignStream extends Stream {
             this.buffer = { ar: [], len: 0 };
         }
         // Process input buffer into lines
-        let offset = 0;
+        let offset;
         while ((offset = utils.indexOfLF(buf)) !== -1) {
             const line = buf.slice(0, offset+1);
             if (buf.length > offset) {
