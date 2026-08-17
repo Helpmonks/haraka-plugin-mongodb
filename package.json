@@ -1,6 +1,6 @@
 {
   "name": "haraka-plugin-mongodb",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "Haraka plugin that stores emails in MongoDb. Additionally, stores reports on delivery.",
   "main": "index.js",
   "scripts": {
@@ -48,7 +48,8 @@
     "string": "^3.3.3",
     "tlds": "^1.252.0",
     "uuid": "^8.3.2",
-    "watch": "^1.0.2"
+    "watch": "^1.0.2",
+    "nan": "2.28.0"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
