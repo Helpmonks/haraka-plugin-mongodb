@@ -269,6 +269,27 @@ exports.queue_to_mongodb = function(next, connection) {
 			});
 		},
 		function (email, waterfall_callback) {
+			// Fix: simpleParser does not read charset from HTML meta tags.
+			// When the MIME part omits charset, non-UTF-8 content (e.g. ISO-8859-1) gets
+			// decoded as UTF-8, producing U+FFFD replacement characters.
+			// Detect the charset from HTML meta tags and re-decode from Haraka's raw body.
+			if (_body_html && /\uFFFD/.test(_body_html)) {
+				var fixedHtml = _fixCharsetFromMetaTag(_body_html, body, plugin);
+				if (fixedHtml) {
+					_body_html = fixedHtml;
+					email.html = fixedHtml;
+				}
+			}
+			if (_body_text && /\uFFFD/.test(_body_text)) {
+				var fixedText = _fixCharsetFromMetaTag(_body_text, body, plugin, 'text/plain');
+				if (fixedText) {
+					_body_text = fixedText;
+					email.text = fixedText;
+				}
+			}
+			return waterfall_callback(null, email);
+		},
+		function (email, waterfall_callback) {
 			// Get proper body
 			EmailBodyUtility.getHtmlAndTextBody(email, body, function (error, html_and_text_body_info) {
 				if (error || ! html_and_text_body_info) {
@@ -844,6 +865,89 @@ function parseSubaddress(user) {
 		parsed.subaddress = user.split('+')[1];
 	}
 	return parsed;
+}
+
+// Recursively find a MIME body part of the given type in the Haraka body tree
+function _findBodyPart(node, type) {
+	if (!node) return null;
+	if (node.ct && node.ct.toLowerCase().includes(type) && (node.bodytext || node.body_text_encoded)) {
+		return node;
+	}
+	if (node.children) {
+		for (var i = 0; i < node.children.length; i++) {
+			var found = _findBodyPart(node.children[i], type);
+			if (found) return found;
+		}
+	}
+	return null;
+}
+
+// Fix HTML/text that was corrupted by simpleParser defaulting to UTF-8 when
+// the MIME part has no charset but the HTML meta tag declares one (e.g. ISO-8859-1).
+// Uses the raw body from Haraka's body tree and re-decodes with the correct charset.
+function _fixCharsetFromMetaTag(content, harakaBody, plugin, mimeType) {
+	mimeType = mimeType || 'text/html';
+	try {
+		// Detect charset from HTML meta tag or content-type meta
+		var charsetMatch = content.match(/charset=["']?([\w-]+)/i);
+		if (!charsetMatch) return null;
+
+		var charset = charsetMatch[1].toLowerCase();
+		if (charset === 'utf-8' || charset === 'utf8') return null;
+
+		// Find the matching part in the Haraka body tree
+		var part = _findBodyPart(harakaBody, mimeType);
+		if (!part) return null;
+
+		// Check if the MIME content-type already has charset (then simpleParser should have handled it)
+		var partCt = part.ct ? part.ct.toLowerCase() : '';
+		if (partCt.includes('charset=')) return null;
+
+		var rawBuffer = part.body_text_encoded;
+		if (!rawBuffer || !Buffer.isBuffer(rawBuffer)) return null;
+
+		// Determine transfer encoding from the MIME part headers
+		var cte = '';
+		if (part.header && part.header.headers && part.header.headers['content-transfer-encoding']) {
+			cte = Array.isArray(part.header.headers['content-transfer-encoding'])
+				? part.header.headers['content-transfer-encoding'][0]
+				: part.header.headers['content-transfer-encoding'];
+			cte = cte.trim().toLowerCase();
+		}
+
+		var rawBytes;
+		if (cte === 'quoted-printable') {
+			// QP decode: convert buffer to binary string, strip soft breaks, decode =XX to bytes
+			var rawStr = rawBuffer.toString('binary');
+			var cleaned = rawStr.replace(/[\t ]+$/gm, '').replace(/=\r?\n/g, '');
+			var decoded = cleaned.replace(/=([0-9A-Fa-f]{2})/g, function(_, hex) {
+				return String.fromCharCode(parseInt(hex, 16));
+			});
+			rawBytes = Buffer.from(decoded, 'binary');
+		}
+		else if (cte === 'base64') {
+			// Base64 decode
+			rawBytes = Buffer.from(rawBuffer.toString('ascii').replace(/\s/g, ''), 'base64');
+		}
+		else {
+			// 7bit / 8bit / binary — raw bytes are already in the buffer
+			rawBytes = rawBuffer;
+		}
+
+		// Convert from the detected charset to UTF-8 using native iconv
+		var converter = new Iconv(charset, 'UTF-8//IGNORE');
+		var utf8Result = converter.convert(rawBytes).toString('utf-8');
+
+		plugin.lognotice('--------------------------------------');
+		plugin.lognotice('Fixed charset from HTML meta tag: ' + charset + ' -> UTF-8 for ' + mimeType);
+		plugin.lognotice('--------------------------------------');
+
+		return utf8Result;
+	}
+	catch (e) {
+		plugin.logerror('Error in _fixCharsetFromMetaTag: ' + e.message);
+		return null;
+	}
 }
 
 function _mp(plugin, connection, cb) {
