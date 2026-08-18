@@ -1,13 +1,21 @@
 {
   "name": "haraka-plugin-mongodb",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "Haraka plugin that stores emails in MongoDb. Additionally, stores reports on delivery.",
   "main": "index.js",
+  "files": [
+    "Changes.md",
+    "config",
+    "dkim_sign.js",
+    "email_body_utility.js",
+    "email_body_utility_mf.js",
+    "index.js"
+  ],
   "scripts": {
-    "lint": "npx eslint *.js test/*.js",
-    "lintfix": "npx eslint --fix *.js test/*.js",
-    "versions": "npx dependency-version-checker check",
-    "test": "npx mocha test/index.js"
+    "lint": "eslint .",
+    "lintfix": "eslint . --fix",
+    "versions": "pnpm outdated",
+    "test": "mocha \"test/**/*.js\""
   },
   "repository": {
     "type": "git",
@@ -29,31 +37,35 @@
     "url": "https://github.com/Helpmonks/haraka-plugin-mongodb/issues"
   },
   "homepage": "https://github.com/haraka/haraka-plugin-mongodb#readme",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "packageManager": "pnpm@11.22.0",
   "dependencies": {
-    "async": "^3.2.5",
-    "decode-html": "^2.0.0",
+    "@zone-eu/mailsplit": "^5.4.15",
+    "address-rfc2822": "^2.2.4",
+    "async": "^3.2.6",
     "detect-character-encoding": "^0.9.0",
-    "fs-extra": "^10.1.0",
+    "fs-extra": "^11.4.0",
+    "haraka-utils": "^2.2.1",
     "iconv": "^3.0.1",
-    "ioredis": "^5.4.1",
-    "linkify-it": "^3.0.3",
-    "mailparser": "^3.7.1",
-    "mailsplit": "^5.4.0",
-    "mime": "^3.0.0",
+    "ioredis": "^6.0.0",
+    "linkify-it": "^6.1.0",
+    "mailparser": "^3.9.15",
+    "mime-types": "^3.0.2",
     "moment": "^2.30.1",
-    "mongodb": "^4.17.2",
-    "node-gyp": "^10.1.0",
-    "nodemailer": "^6.9.13",
+    "mongodb": "^7.5.0",
+    "nodemailer": "^9.0.5",
     "quoted-printable": "^1.0.1",
-    "string": "^3.3.3",
-    "tlds": "^1.252.0",
-    "uuid": "^8.3.2",
-    "watch": "^1.0.2"
+    "tlds": "^1.261.0"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
     "eslint-plugin-haraka": "^1.0.16",
-    "haraka-test-fixtures": "^1.3.7",
-    "mocha": "^10.4.0"
+    "globals": "^17.11.0",
+    "haraka-config": "^1.6.3",
+    "haraka-test-fixtures": "^1.7.2",
+    "mocha": "^11.8.0"
   }
 }

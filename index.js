@@ -4,17 +4,13 @@
 
 // Require
 const os = require('os');
-const mongoc = require('mongodb').MongoClient;
-const ObjectID = require('mongodb').ObjectID;
+const { randomUUID } = require('crypto');
+const { MongoClient, ObjectId } = require('mongodb');
 const async = require('async');
-const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const fs = require('fs-extra');
 const path = require('path');
-const S = require('string');
-const watch = require('watch');
-const mime = require('mime');
-const linkify = require('linkify-it')();
+const mime = require('mime-types');
 const Iconv = require('iconv').Iconv;
 const simpleParser = require('mailparser').simpleParser;
 const exec = require('child_process').exec;
@@ -44,15 +40,21 @@ exports.register = function () {
 		plugin.register_hook('queue', 'queue_to_mongodb');
 		// Define mime type
 		try {
-			if (plugin.cfc.attachments.custom_content_type) {
-				mime.define(plugin.cfc.attachments.custom_content_type)
+			plugin.custom_mime_extensions = new Map();
+			var customContentTypes = plugin.cfg.attachments.custom_content_type;
+			if (typeof customContentTypes === 'string') customContentTypes = JSON.parse(customContentTypes.replace(/'/g, '"'));
+			if (customContentTypes && typeof customContentTypes === 'object') {
+				Object.entries(customContentTypes).forEach(function ([contentType, extensions]) {
+					var extension = Array.isArray(extensions) ? extensions[0] : extensions;
+					if (extension) plugin.custom_mime_extensions.set(contentType, extension);
+				});
 				plugin.lognotice('------------------------------------------------- ');
 				plugin.lognotice(' Successfully loaded the custom content types !!! ');
 				plugin.lognotice('------------------------------------------------- ');
 			}
 		}
-		catch(e) {
-
+		catch(error) {
+			plugin.logerror('Unable to load custom content types:', error);
 		}
 	}
 	// Enable for delivery results
@@ -103,14 +105,10 @@ exports.initialize_mongodb = function (next, server) {
 			connectionString += `${plugin.cfg.mongodb.host}:${plugin.cfg.mongodb.port}/${plugin.cfg.mongodb.db}`;
 		}
 
-		mongoc.connect(connectionString, { 'useNewUrlParser': true, 'keepAlive': true, 'connectTimeoutMS': 0, 'socketTimeoutMS': 0 }, function(err, client) {
-			if (err) {
-				plugin.logerror('ERROR connecting to MongoDB !!!');
-				plugin.logerror(err);
-				throw err;
-			}
+		var client = new MongoClient(connectionString, { 'connectTimeoutMS': 0, 'socketTimeoutMS': 0 });
+		client.connect().then(function () {
+			server.notes.mongodb_client = client;
 			server.notes.mongodb = client.db(plugin.cfg.mongodb.db);
-			// plugin.lognotice('-------------------------------------- ');
 			// plugin.lognotice('server.notes.mongodb : ', server.notes.mongodb);
 			plugin.lognotice('-------------------------------------- ');
 			plugin.lognotice(' Successfully connected to MongoDB !!! ');
@@ -171,6 +169,10 @@ exports.initialize_mongodb = function (next, server) {
 			// 	]);
 			// }
 			next();
+		}).catch(function (err) {
+			plugin.logerror('ERROR connecting to MongoDB !!!');
+			plugin.logerror(err);
+			throw err;
 		});
 	}
 	else {
@@ -196,6 +198,7 @@ exports.initialize_redis = function(next, server) {
 	var _client_options = plugin.cfg.redis.string ? plugin.cfg.redis.string : {
 		port: plugin.cfg.redis.port,
 		host: plugin.cfg.redis.host,
+		protocol: 2,
 		dropBufferSupport : true,
 		enableOfflineQueue : true,
 		showFriendlyErrorStack : false,
@@ -204,14 +207,14 @@ exports.initialize_redis = function(next, server) {
 	};
 
 	// Connect to redis
-	var _client = plugin.cfg.redis.string ? new redis(_client_options, { keepAlive: 0, dropBufferSupport: true, enableOfflineQueue : true, connectTimeout: 30000, showFriendlyErrorStack : false }) : new redis(_client_options);
+	var _client = plugin.cfg.redis.string ? new redis(_client_options, { protocol: 2, keepAlive: 0, dropBufferSupport: true, enableOfflineQueue : true, connectTimeout: 30000, showFriendlyErrorStack : false }) : new redis(_client_options);
+	server.notes.redis = _client;
 
 	_client.on('ready', function () {
 		plugin.loginfo('-----------------------------------------------------');
 		plugin.loginfo(`Successfully connected to Redis!`);
 		plugin.loginfo(`Host: ${plugin.cfg.redis.host} Port: ${plugin.cfg.redis.port}`);
 		plugin.loginfo('-----------------------------------------------------');
-		server.notes.redis = _client;
 	});
 
 	_client.on('error', function (error) {
@@ -367,7 +370,7 @@ exports.queue_to_mongodb = function(next, connection) {
 			'subject': email_object.subject,
 			'date': email_object.date || email_object.headers.get('date'),
 			'received_date': _now,
-			'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectID() + '@haraka-helpmonks.com',
+			'message_id': email_object.messageId ? email_object.messageId.replace(/<|>/gm, '') : new ObjectId() + '@haraka-helpmonks.com',
 			'attachments': email_object.attachments || [],
 			'headers': email_object.headers,
 			'html': email_object.html,
@@ -403,41 +406,26 @@ exports.queue_to_mongodb = function(next, connection) {
 		}
 
 		// Add to db
-		server.notes.mongodb.collection(plugin.cfg.collections.queue).insertOne(_email, { checkKeys : false }, function(err) {
-			if (err) {
-				// Remove the large fields and try again
-				delete _email.haraka_body;
-				delete _email.raw;
-				// Let's try again
-				server.notes.mongodb.collection(plugin.cfg.collections.queue).insertOne(_email, { checkKeys : false }, function(err) {
-					if (err) {
-						plugin.logerror('--------------------------------------');
-						plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
-						plugin.logerror('--------------------------------------');
-						// Restart
-						if (plugin.cfg.mongodb && plugin.cfg.mongodb.restart === 'yes') {
-							_sendMessageBack('insert', plugin, _header, err);
-							throw 'MongoDB insert error';
-						}
-						// Send error
-						// _sendMessageBack('insert', plugin, _header, err);
-						// Return
-						return next(DENYSOFT, "storage error");
-					}
-					else {
-						plugin.lognotice('--------------------------------------');
-						plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
-						plugin.lognotice('--------------------------------------');
-						return next(OK);
-					}
-				})
+		var queueCollection = server.notes.mongodb.collection(plugin.cfg.collections.queue);
+		queueCollection.insertOne(_email, { checkKeys : false }).catch(function () {
+			// Remove the large fields and try again
+			delete _email.haraka_body;
+			delete _email.raw;
+			return queueCollection.insertOne(_email, { checkKeys : false });
+		}).then(function () {
+			plugin.lognotice('--------------------------------------');
+			plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
+			plugin.lognotice('--------------------------------------');
+			return next(OK);
+		}).catch(function (err) {
+			plugin.logerror('--------------------------------------');
+			plugin.logerror(`Error on insert of the email with the message_id: ${_email.message_id} Error: `, err.message);
+			plugin.logerror('--------------------------------------');
+			if (plugin.cfg.mongodb && plugin.cfg.mongodb.restart === 'yes') {
+				_sendMessageBack('insert', plugin, _header, err);
+				throw new Error('MongoDB insert error', { cause: err });
 			}
-			else {
-				plugin.lognotice('--------------------------------------');
-				plugin.lognotice(` Successfully stored the email with the message_id: ${_email.message_id} !!! `);
-				plugin.lognotice('--------------------------------------');
-				return next(OK);
-			}
+			return next(DENYSOFT, "storage error");
 		});
 
 	});
@@ -450,13 +438,12 @@ exports.queue_to_mongodb = function(next, connection) {
 
 // SEND EMAIL
 exports.data_post_email = function(next, connection) {
-	var plugin = this;
 	// plugin.lognotice('--------------------------------------');
 	// plugin.lognotice(' DATA POST EMAIL !!! ');
 	// Get Haraka UUID
 	connection.transaction.notes.haraka_uuid = connection.transaction.uuid;
 	// Get messageid
-	var _mid = connection.transaction.header.headers_decoded && connection.transaction.header.headers_decoded['message-id'] ? connection.transaction.header.headers_decoded['message-id'][0] : new ObjectID() + '@haraka-helpmonks.com';
+	var _mid = connection.transaction.header.headers_decoded && connection.transaction.header.headers_decoded['message-id'] ? connection.transaction.header.headers_decoded['message-id'][0] : new ObjectId() + '@haraka-helpmonks.com';
 	_mid = _mid.replace(/<|>/g, '');
 	connection.transaction.notes.message_id = _mid;
 	next();
@@ -538,38 +525,19 @@ exports.bounced_email = function(next, hmail, error) {
 	var plugin = this;
 	var _rcpt = hmail.todo.rcpt_to[0];
 	var _rcpt_to = _rcpt.original.slice(1, -1);
-	var _date = moment().subtract(1, 'h').toISOString();
-	var _query = { 'rcpt_to' : _rcpt_to, 'timestamp' : { '$gt' : new Date(_date) } };
-	// Query if there is already a record for this user
-	server.notes.mongodb.collection(plugin.cfg.collections.delivery).find(_query).toArray(function(err, record) {
-		if (err) {
-			plugin.lognotice('--------------------------------------');
-			plugin.lognotice('Error on find for bounced email : ', err);
-			plugin.lognotice('--------------------------------------');
-			return next();
-		}
-		// We store the bounce message in MongoDB no matter what
-		var _data = {
-			'message_id' : hmail.todo.notes.message_id,
-			'haraka_uuid' : hmail.todo.notes.haraka_uuid,
-			'stage' : 'Bounced',
-			'timestamp' : new Date(),
-			'hook' : 'bounce',
-			'bounce_error' : error ? error : null,
-			'rcpt_to' : _rcpt_to,
-			'rcpt_obj' : _rcpt
-		};
-		// Save
-		_saveDeliveryResults(_data, server.notes.mongodb, plugin);
-		// No reason not to send an error message
-		next();
-		// Send bounce message or not
-		// if ( record && record.length ) {
-		// 	return next(OK);
-		// }
-		// else {
-		// 	return next();
-		// }
+	// We store the bounce message in MongoDB no matter what
+	var _data = {
+		'message_id' : hmail.todo.notes.message_id,
+		'haraka_uuid' : hmail.todo.notes.haraka_uuid,
+		'stage' : 'Bounced',
+		'timestamp' : new Date(),
+		'hook' : 'bounce',
+		'bounce_error' : error ? error : null,
+		'rcpt_to' : _rcpt_to,
+		'rcpt_obj' : _rcpt
+	};
+	_saveDeliveryResults(_data, server.notes.mongodb, plugin, function () {
+		return next();
 	});
 };
 
@@ -619,12 +587,22 @@ exports.save_results_to_mongodb = function(next, hmail, params) {
 
 exports.shutdown = function() {
 	var plugin = this;
-	server.notes.mongodb.close();
+	var shutdowns = [];
+	if (server.notes.mongodb_client) shutdowns.push(server.notes.mongodb_client.close());
+	if (server.notes.redis) shutdowns.push(server.notes.redis.quit());
+	return Promise.all(shutdowns).catch(function (error) {
+		plugin.logerror('Error closing database connection:', error);
+	});
 };
 
 // ------------------
 // INTERNAL FUNCTIONS
 // ------------------
+
+function _getMimeExtension(plugin, contentType) {
+	var customExtension = plugin.custom_mime_extensions && plugin.custom_mime_extensions.get(contentType);
+	return customExtension || mime.extension(contentType);
+}
 
 function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	// plugin.lognotice(`Email msg_type: ${msg_type}`)
@@ -696,7 +674,7 @@ function _sendMessageBack(msg_type, plugin, email_headers, error_object) {
 	_smtpTransport.sendMail(_mail_options, function (error, response) {
 		plugin.lognotice("error", error);
 		plugin.lognotice("response", response);
-		smtpTransport.close();
+		_smtpTransport.close();
 	});
 }
 
@@ -747,7 +725,7 @@ function _limitIncoming(plugin, email_headers, cb) {
 			async.waterfall([
 				// Check
 				function (waterfall_callback) {
-					server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).findOne(_obj, function(err, record) {
+					server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).findOne(_obj).then(function (record) {
 						// plugin.lognotice("record", record);
 						// If found
 						if (record && record.from) {
@@ -758,15 +736,14 @@ function _limitIncoming(plugin, email_headers, cb) {
 							return waterfall_callback(true);
 						}
 						return waterfall_callback(null);
-					});
+					}).catch(waterfall_callback);
 				},
 				// Insert
 				function (waterfall_callback) {
-					waterfall_callback(null);
 					_obj.timestamp = new Date();
-					server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).insertOne(_obj, { checkKeys : false }, function(err) {
-
-					});
+					server.notes.mongodb.collection(plugin.cfg.limits.incoming_collection).insertOne(_obj, { checkKeys : false }).then(function () {
+						waterfall_callback(null);
+					}).catch(waterfall_callback);
 				}
 			],
 			function (error) {
@@ -829,42 +806,17 @@ function _saveDeliveryResults(data_object, conn, plugin, callback) {
 	if (!conn || !conn.collection) return callback && callback(null);
 	data_object.hostname = os.hostname();
 	// Save
-	conn.collection(plugin.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }, function(err) {
-		if (err) {
-			plugin.logerror('--------------------------------------');
-			plugin.logerror('Error on insert into delivery : ', err);
-			plugin.logerror('--------------------------------------');
-			return callback && callback(err);
-		} else {
-			plugin.lognotice('--------------------------------------');
-			plugin.lognotice(`Successfully stored the delivery log for message_id : ${data_object.message_id} !!! `);
-			plugin.lognotice('--------------------------------------');
-			return callback && callback(null);
-		}
+	conn.collection(plugin.cfg.collections.delivery).insertOne(data_object, { checkKeys : false }).then(function () {
+		plugin.lognotice('--------------------------------------');
+		plugin.lognotice(`Successfully stored the delivery log for message_id : ${data_object.message_id} !!! `);
+		plugin.lognotice('--------------------------------------');
+		return callback && callback(null);
+	}).catch(function (err) {
+		plugin.logerror('--------------------------------------');
+		plugin.logerror('Error on insert into delivery : ', err);
+		plugin.logerror('--------------------------------------');
+		return callback && callback(err);
 	});
-}
-
-function extractChildren(children) {
-	return children.map(function(child) {
-		var data = {
-			bodytext: child.bodytext,
-			headers: child.header.headers_decoded
-		};
-		if (child.children.length > 0) data.children = extractChildren(child.children);
-		return data;
-	});
-}
-
-// Parse the address - Useful for checking usernames in rcpt_to
-function parseSubaddress(user) {
-	var parsed = {
-		username: user
-	};
-	if (user.indexOf('+')) {
-		parsed.username = user.split('+')[0];
-		parsed.subaddress = user.split('+')[1];
-	}
-	return parsed;
 }
 
 // Recursively find a MIME body part of the given type in the Haraka body tree
@@ -934,7 +886,7 @@ function _fixCharsetFromMetaTag(content, harakaBody, plugin, mimeType) {
 			rawBytes = rawBuffer;
 		}
 
-		// Convert from the detected charset to UTF-8 using native iconv
+		// Convert from the detected charset to UTF-8
 		var converter = new Iconv(charset, 'UTF-8//IGNORE');
 		var utf8Result = converter.convert(rawBytes).toString('utf-8');
 
@@ -991,9 +943,6 @@ function _mp(plugin, connection, cb) {
 function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 	var _attachments = [];
-
-	// loop through each attachment and attempt to store it locally
-	var is_tnef_attachment = false;
 
 	// Filter attachments starting with ~
 	// attachments = attachments.filter(a => a.filename && a.filename.startsWith('~') ? false : true);
@@ -1059,7 +1008,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 			// if there's no checksum for the attachment then generate our own uuid
 			// attachment.checksum = attachment.checksum || uuid.v4();
-			var attachment_checksum = attachment.checksum || uuidv4();
+			var attachment_checksum = attachment.checksum || randomUUID();
 			// plugin.loginfo('Begin storing attachment : ', attachment.checksum, attachment_checksum);
 
 			// Size is in another field in 2.x
@@ -1097,7 +1046,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 			// If filename starts with ~
 			if ( attachment.fileName.startsWith('~') ) {
-				var _clean_filename = attachment.fileName.replace(/\~/g, '');
+				var _clean_filename = attachment.fileName.replace(/~/g, '');
 				attachment.fileName = _clean_filename;
 				attachment.generatedFileName = _clean_filename;
 			}
@@ -1106,7 +1055,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 			if (attachment.fileName === 'attachment.txt' && attachment.contentType && attachment.contentType.includes('/') ) {
 				// Get ext from contenttype
 				try {
-					var _ext = attachment.contentType.indexOf('rfc822') === -1 ? mime.getExtension(attachment.contentType) : 'eml';
+					var _ext = attachment.contentType.indexOf('rfc822') === -1 ? _getMimeExtension(plugin, attachment.contentType) : 'eml';
 					if (_ext) {
 						attachment.fileName = `attachment.${_ext}`;
 						attachment.generatedFileName = attachment.fileName;
@@ -1125,17 +1074,17 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 			// Split up filename
 			var _fn_split = attachment.fileName.split('.');
-			var _is_invalid = _fn_split && _fn_split[1] === 'undefined' || _fn_split.length === 1 ? true : false;
+			var _is_invalid = _fn_split.length === 1 || _fn_split[_fn_split.length - 1] === 'undefined';
 
 			// Set extension based on content type
 			if (attachment.contentType && _is_invalid) {
 				// Get extension
-				var _fn_ext = mime.getExtension(attachment.contentType);
-				// Add it together
-				var _fn_final = _fn_split[0] + '.' + _fn_ext;
-				// Create attachment object
-				attachment.fileName = _fn_final;
-				attachment.generatedFileName = _fn_final;
+				var _fn_ext = _getMimeExtension(plugin, attachment.contentType);
+				if (_fn_ext) {
+					var _fn_final = _fn_split[0] + '.' + _fn_ext;
+					attachment.fileName = _fn_final;
+					attachment.generatedFileName = _fn_final;
+				}
 			}
 
 			// if generatedFileName is longer than 200
@@ -1147,7 +1096,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 				// Get filename
 				var _filename_pop = _filename_new[0];
 				// Just in case filename is longer than 200 chars we make sure to take from the left
-				var _filename_200 = S(_filename_pop).left(200).s;
+				var _filename_200 = _filename_pop.slice(0, 200);
 				// Add it together
 				var _final = _filename_200 + '.' + _fileExt;
 				// Create attachment object
@@ -1183,9 +1132,6 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 					// if we have an attachment in tnef, unzip it and store the results
 					if (attachment.generatedFileName.toLowerCase() === 'winmail.dat') {
 
-						// set to true so later the emails[0].attachments gets updated
-						is_tnef_attachment = true;
-
 						// use tnef to extract the file into the same directory
 						var exec_command = `tnef ${attachment_full_path} -C ${attachment_directory}`;
 
@@ -1193,7 +1139,7 @@ function _storeAttachments(connection, plugin, attachments, mail_object, cb) {
 
 						// execute the tnef process to extract the real attachment
 						var tnef_process = exec(exec_command, function (error, stdout, stderr) {
-							var general_error = stderr || error;
+							if (stderr || error) plugin.logerror('WINMAIL: tnef returned an error:', stderr || error);
 
 							// get the contents of the directory as all for the attachments
 							fs.readdir(attachment_directory, function (error, contents) {
@@ -1340,8 +1286,8 @@ function _checkInlineImages(plugin, email, callback) {
 			// Loop over matches
 			_match.forEach(function(cid) {
 				// Replace images
-				email.html = S(email.html).replaceAll('cid:' + _contentid, _data_string).s;
-				email.html = S(email.html).replaceAll(_attachment_full_path, _data_string).s;
+				email.html = email.html.replaceAll('cid:' + _contentid, _data_string);
+				email.html = email.html.replaceAll(_attachment_full_path, _data_string);
 				// Remove attachment from attachment array
 				if ( _cid === 'base64' ) {
 					email.attachments = email.attachments.filter(a => a.checksum !== attachment.checksum);
@@ -1357,19 +1303,19 @@ function _checkInlineImages(plugin, email, callback) {
 function _cleanFileName(file_name, generated_file_name) {
 
 	// Split filename by last dot
-	var _fN = file_name.split(/\.(?=[^\.]+$)/);
+	var _fN = file_name.split(/\.(?=[^.]+$)/);
 	// Clean up filename that could potentially cause an issue
 	var _fN_clean = _fN[0].replace(/[^A-Za-z0-9]/g, '_');
 
 	// Split generated filename by last dot
-	var _fNG = generated_file_name.split(/\.(?=[^\.]+$)/);
+	var _fNG = generated_file_name.split(/\.(?=[^.]+$)/);
 	// Clean up filename that could potentially cause an issue
 	var _fNG_clean = _fNG[0].replace(/[^A-Za-z0-9]/g, '_');
 
 	// Return
 	return {
-		'file_name' : `${_fN_clean}.${_fN[1]}`,
-		'generated_file_name' : `${_fNG_clean}.${_fNG[1]}`
+		'file_name' : _fN[1] ? `${_fN_clean}.${_fN[1]}` : _fN_clean,
+		'generated_file_name' : _fNG[1] ? `${_fNG_clean}.${_fNG[1]}` : _fNG_clean
 	};
 
 }
@@ -1386,45 +1332,28 @@ function _checkAttachmentPaths(plugin) {
 	// if not defined
 	if (!_attachment_path) return;
 
-	var _pathtowatch = _attachment_path;
-	var _watch_options = {
-		'ignoreDotFiles' : false,
-		'interval' : 1,
-		'ignoreUnreadableDir' : false,
-		'ignoreNotPermitted' : false,
-		'ignoreDirectoryPattern' : false
-	};
-
-	_pathtowatch = `${_pathtowatch}check/`.replace('//','/');
+	var _pathtowatch = path.join(_attachment_path, 'check');
 
 	plugin.lognotice( `---------------------------------------------------------------` );
 	plugin.lognotice( `Starting directory watch on:` );
 	plugin.lognotice( `${_pathtowatch}` );
 	plugin.lognotice( `---------------------------------------------------------------` );
 
-	var _the_file = `${_pathtowatch}.helpmonks_watch`
+	var _the_file = path.join(_pathtowatch, '.helpmonks_watch');
 
 	// Create a file in the attachment dir
 	fs.ensureFileSync(_the_file);
 
-	watch.createMonitor(_pathtowatch, function (monitor) {
-		monitor.files[_the_file];
-		// Handle new files
-		monitor.on("created", function (f, stat) {
-		})
-		// Handle file changes
-		monitor.on("changed", function (f, curr, prev) {
-		})
-		// Handle removed files
-		monitor.on("removed", function (f, stat) {
-			// Only exit if the path contains our watch file
-			if ( !f.includes('.helpmonks_watch') ) return;
-			plugin.logerror( `---------------------------------------------------------------` );
-			plugin.logerror( 'Attachment directory is not accessible anymore!!!')
-			plugin.logerror( `---------------------------------------------------------------` );
-			// Exit out with an error
-			throw 'Attachment directory is not available'
-		})
+	function attachmentPathUnavailable() {
+		plugin.logerror('---------------------------------------------------------------');
+		plugin.logerror('Attachment directory is not accessible anymore!!!');
+		plugin.logerror('---------------------------------------------------------------');
+		throw new Error('Attachment directory is not available');
+	}
+
+	fs.watchFile(_the_file, { interval: 1000 }, function (current) {
+		if (current.nlink !== 0) return;
+		fs.unwatchFile(_the_file);
+		attachmentPathUnavailable();
 	});
 }
-

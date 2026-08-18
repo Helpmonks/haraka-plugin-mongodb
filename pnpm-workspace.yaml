@@ -1,0 +1,8 @@
+allowBuilds:
+  detect-character-encoding: true
+  iconv: true
+overrides:
+  deepmerge-ts: 8.0.1
+  diff: 9.0.0
+  nan: 2.28.0
+  serialize-javascript: 7.1.0

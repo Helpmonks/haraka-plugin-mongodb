@@ -3,8 +3,8 @@ const EmailBodyUtility = function() {
 
 	// const ced = require('ced');
 	const async = require('async');
-	const linkify = require('linkify-it')();
-	const Splitter = require('mailsplit').Splitter;
+	const linkify = require('linkify-it').linkifyit();
+	const Splitter = require('@zone-eu/mailsplit').Splitter;
 	const detectCharacterEncoding = require('detect-character-encoding');
 
 	const quotedPrintable = require('quoted-printable');
@@ -27,7 +27,7 @@ const EmailBodyUtility = function() {
 
 
 	var _log_module = false;
-	var _log_all_fields = false && _log_module;
+	var _log_all_fields = false;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,7 +47,7 @@ const EmailBodyUtility = function() {
 
 		var _specified_options = Object.keys(options);
 		if (_specified_options.includes('log_module')) { _log_module = !!options.log_module; }
-		if (_specified_options.includes('log_all_fields')) { _log_module = _log_all_fields && !!options.log_all_fields; }
+		if (_specified_options.includes('log_all_fields')) { _log_all_fields = _log_module && !!options.log_all_fields; }
 
 		var has_rfc_822_message = false;
 		var uses_windows_1257_charset = false;
@@ -106,8 +106,6 @@ const EmailBodyUtility = function() {
 						||
 						(! html_info.has_valid_encoding && text_info.has_valid_encoding) // or we could not properly decode the content for the html but we could for the text
 					);
-
-					var use_text_for_html = ! html_info.result;
 
 					// override any html mailparser result we have if there's a valid text result
 					if (use_text_for_html) {
@@ -226,12 +224,10 @@ const EmailBodyUtility = function() {
 			var result = getBodyByField(email_obj, body, field);
 
 			_log_module && console.log(`checking field '${field.toUpperCase()}', string: "${(result.body || '').substring(0,150)}..."\n`);
-			// if result is unicode, then set set the result.body to null
 			var is_base64_encoded = _is_base64_encoded_regex.test(result.body);
-			_log_module && console.log('is_base64_encoded:', is_base64_encoded)
-			if (is_base64_encoded) { result.body = null; }
-
-			var is_base64_encoded = false;
+			_log_module && console.log('is_base64_encoded:', is_base64_encoded);
+			if (is_base64_encoded) result.body = null;
+			is_base64_encoded = false;
 			if (result.body && typeof result.body === 'string' && result.body.length) {
 
 				// only clear out a base64 encoded result if it's not the last field
@@ -312,10 +308,10 @@ const EmailBodyUtility = function() {
 
 				case 'mailparser_html':
 
-					var body = _cleanCharsetsFromHTML(email_obj.html || '');
+					var cleanBody = _cleanCharsetsFromHTML(email_obj.html || '');
 
 					return {
-						body,
+						'body': cleanBody,
 						'source': 'mailparser_html'
 					};
 
@@ -404,14 +400,11 @@ const EmailBodyUtility = function() {
 					(does_body_text_encoded_contain_html_invalid_unicode && !does_bodytext_contain_html_invalid_unicode) ||
 					(does_body_text_encoded_contain_replacement_char_unicode && !does_bodytext_contain_replacement_char_unicode);
 
-				var does_specified_encoding_match_neither_guessed_encoding = !does_specified_encoding_match_body_text_encoded_encoding && !does_specified_encoding_match_bodytext_encoding;
-
 				var prefer_bodytext_for_ascii = has_broken_encoding && bodytext_specified_encoding.includes('us-asci');
 
 				var prefer_bodytext_for_encoding_confidence = !has_broken_encoding && has_higher_bodytext_encoding_confidence &&
 					(!does_bodytext_contain_replacement_char_unicode || does_body_text_encoded_contain_replacement_char_unicode || body_text_encoded_encoding.confidence < 20)
 
-				var prefer_bodytext_for_8859_values = bodytext_encoding_normalized !== 'iso-8859-1' && body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
 				var prefer_bodytext_for_8859_values = body_text_encoded_encoding_normalized === 'iso-8859-1' && bodytext_encoding.confidence <= 50;
 
 				var prefer_bodytext = prefer_bodytext_for_ascii || prefer_bodytext_for_encoding_confidence || prefer_bodytext_for_8859_values;
@@ -420,8 +413,6 @@ const EmailBodyUtility = function() {
 
 				var body = use_bodytext ? bodytext : haraka_body_text_encoded;
 				var source = use_bodytext ? 'haraka_bodytext' : `haraka_body_text_encoded`;
-
-				var header_content_type = Array.isArray(haraka_obj.header.headers['content-type']) ? haraka_obj.header.headers['content-type'].join(' ') : haraka_obj.header.headers['content-type'] || '';
 
 				// if we're working with html then clean up the embedded charsets
 				if (type === 'text/html') { body = _cleanCharsetsFromHTML(body); }
@@ -460,12 +451,12 @@ const EmailBodyUtility = function() {
 			var i = 0;
 			// take the text from the first child that has it
 			while (!has_valid_child_body && i < num_children) {
-				var child_result = getBodyOfTypeFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
-				child_result.body = child_result.body.trim();
+				child_result = getBodyOfTypeFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
+				child_result.body = typeof child_result.body === 'string' ? child_result.body.trim() : '';
 				has_valid_child_body = !!child_result.body;
 			}
 
-			var child_result = has_valid_child_body ? child_result : _no_body_result
+			child_result = has_valid_child_body ? child_result : _no_body_result;
 
 			return child_result;
 
@@ -576,12 +567,10 @@ const EmailBodyUtility = function() {
 
 		if (!body_text_encoded) return null;
 
-		const _regex = /=\n/gm;
-
 		var _body_string = body_text_encoded.toString('utf8');
 		var fixed_body = _body_string ? _body_string.replace(/=\n/gm, '') : '';
 
-		var formatted_body = null;
+		var formatted_body;
 		try {
 			formatted_body = quotedPrintable.decode(fixed_body).toString('utf8');
 		} catch (ex) {
@@ -656,6 +645,8 @@ const EmailBodyUtility = function() {
 		var rfc_body_info = { 'html': '', 'text': '' };
 
 		var rfc_822_node = _getFirstNodeOfType(body, 'message/rfc822');
+		var collect_html = false;
+		var collect_text = false;
 
 		let splitter = new Splitter();
 
