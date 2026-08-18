@@ -452,7 +452,7 @@ const EmailBodyUtility = function() {
 			// take the text from the first child that has it
 			while (!has_valid_child_body && i < num_children) {
 				child_result = getBodyOfTypeFromChildren(haraka_obj.children[i++], type, depth + 1, ++index);
-				child_result.body = child_result.body.trim();
+				child_result.body = typeof child_result.body === 'string' ? child_result.body.trim() : '';
 				has_valid_child_body = !!child_result.body;
 			}
 

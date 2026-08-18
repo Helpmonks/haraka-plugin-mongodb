@@ -20,6 +20,24 @@ describe('dependency compatibility', function () {
 		assert.match(html, /href="https:\/\/twitter\.com\/helpmonks"/);
 	});
 
+	it('skips MIME children whose encoded body is null', function (done) {
+		var bodyUtility = require('../email_body_utility');
+		var email = { html: '', text: 'Fallback text', textAsHtml: '' };
+		var body = {
+			ct: 'multipart/alternative',
+			children: [
+				{ ct: 'text/html', bodytext: 'Ignored body', body_text_encoded: null, body_encoding: 'utf-8', header: { headers: { 'content-type': [] } } },
+				{ ct: 'text/html', bodytext: 'Fallback HTML', body_text_encoded: 'Fallback HTML', body_encoding: 'utf-8', header: { headers: { 'content-type': [] } } },
+			],
+		};
+
+		bodyUtility.getHtmlAndTextBody(email, body, {}, function (error, result) {
+			assert.ifError(error);
+			assert.match(result.html, /Fallback HTML/);
+			done();
+		});
+	});
+
 	it('detects and decodes non-UTF-8 text', function () {
 		var source = Buffer.from([0x48, 0xe9]);
 		var detected = detectCharacterEncoding(source);
